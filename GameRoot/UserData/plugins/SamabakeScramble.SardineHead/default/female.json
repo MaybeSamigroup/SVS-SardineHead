@@ -1,0 +1,3720 @@
+{
+  "Face": {
+    "ct_head": {
+      "IntValues": {},
+      "FloatValues": {
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5
+      },
+      "VectorValues": {
+        "_Paint_position_01": {
+          "x": -0.14,
+          "y": 0.16,
+          "z": 0,
+          "w": -2.5
+        },
+        "_Paint_position_02": {
+          "x": -0.14,
+          "y": 0.16,
+          "z": 0,
+          "w": -2.5
+        },
+        "_Paint_position_03": {
+          "x": -0.14,
+          "y": 0.16,
+          "z": 0,
+          "w": -2.5
+        },
+        "_Hokuro_position": {
+          "x": -0.03999999,
+          "y": 0.21,
+          "z": 0,
+          "w": -0.8
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Mouth_color": {
+          "x": 0.7735849,
+          "y": 0.41963327,
+          "z": 0.41963327,
+          "w": 1
+        },
+        "_Main_color": {
+          "x": 1,
+          "y": 0.883376,
+          "z": 0.8458339,
+          "w": 1
+        },
+        "_Paint_color_01": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Paint_color_02": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Paint_color_03": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Hokuro_color": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Eyeshadow_color": {
+          "x": 1,
+          "y": 0.5445865,
+          "z": 0.49194866,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    },
+    "cf_O_face": {
+      "IntValues": {},
+      "FloatValues": {
+        "_shadowextend": 0,
+        "_TypeSelect": 3,
+        "_RimLight": 1,
+        "_RimMask": 1,
+        "_ShadowColorON": 0,
+        "_Float14": 0,
+        "_Float10": 40,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Shadow_power": 0.53897905,
+        "_Face_detail_power": 0,
+        "_Dither": 1,
+        "_Cheek_position_x": 0.94894195,
+        "_Cheek_position_y": 0.7349495,
+        "_Cheek_rotation": 0.5,
+        "_Line_width": 0.34310693,
+        "_Cheek_size": 1,
+        "_Line_power": 1,
+        "_sppower": 1,
+        "_HohoakaIntensity": 0,
+        "_AseIntensity": 0,
+        "_NureIntensity": 0,
+        "_liquidface": 0
+      },
+      "VectorValues": {
+        "_Cheek_position": {
+          "x": -0.12,
+          "y": 0,
+          "z": 0,
+          "w": 0.75
+        },
+        "_ShadowSetting": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_LiquidTiling": {
+          "x": -0.04,
+          "y": 0,
+          "z": 1.2,
+          "w": 1.2
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_ShadowColor": {
+          "x": 0.4470588,
+          "y": 0.572549,
+          "z": 0.7450981,
+          "w": 1
+        },
+        "_Lip_highlight_color": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Cheek_highlight_color": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Cheek_color": {
+          "x": 1,
+          "y": 0.07167811,
+          "z": 0,
+          "w": 0.6873695
+        },
+        "_Lip_color": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Nose_color": {
+          "x": 1,
+          "y": 0.27830115,
+          "z": 0.27830115,
+          "w": 1
+        },
+        "_Nose_line_color": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Shadow_color": {
+          "x": 0.9011347,
+          "y": 0,
+          "z": 0,
+          "w": 0.9223931
+        },
+        "_Line_color": {
+          "x": 0.42452702,
+          "y": 0.28635508,
+          "z": 0.28635508,
+          "w": 1
+        },
+        "_MainColor": {
+          "x": 1,
+          "y": 0.91764706,
+          "z": 0.8627451,
+          "w": 1
+        },
+        "_spcolor": {
+          "x": 1,
+          "y": 0.7524813,
+          "z": 0.68146116,
+          "w": 1
+        },
+        "_hohoakacolor": {
+          "x": 0.90099996,
+          "y": 0,
+          "z": 0,
+          "w": 0.29803923
+        }
+      },
+      "TextureHashes": {}
+    }
+  },
+  "Eyebrows": {
+    "cf_O_mayuge": {
+      "IntValues": {},
+      "FloatValues": {
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Dither": 1,
+        "_Shadow_power": 0.7,
+        "_Ligjht_influence": 0,
+        "_BrowWidth": 0.5,
+        "_BrowLength": 0.5
+      },
+      "VectorValues": {},
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_eyebrow_color01": {
+          "x": 0.3853425,
+          "y": 0.28300914,
+          "z": 0.24678218,
+          "w": 1
+        },
+        "_eyebrow_color02": {
+          "x": 1,
+          "y": 0.68354785,
+          "z": 0.68354785,
+          "w": 0.31911838
+        },
+        "_eyebrow_color03": {
+          "x": 0.7176471,
+          "y": 0.5490196,
+          "z": 0.4313724,
+          "w": 0
+        },
+        "_Line_color": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    }
+  },
+  "Eyelines": {
+    "cf_O_eyelid": {
+      "IntValues": {},
+      "FloatValues": {
+        "_QueueOffset": -15,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Dither": 1,
+        "_Eyelid_position_x": 0.3107974,
+        "_Eyelid_position_y": 0.35167423,
+        "_Eyelid_rotation": 0.58253175,
+        "_Eyelid_size": 0.23104355
+      },
+      "VectorValues": {},
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Color": {
+          "x": 1,
+          "y": 0.8642558,
+          "z": 0.82547176,
+          "w": 1
+        },
+        "_Line_color": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        }
+      },
+      "TextureHashes": {}
+    }
+  },
+  "Eyes": {
+    "cf_O_hitomi_L": {
+      "IntValues": {},
+      "FloatValues": {
+        "_Eye_postion_rebers": 1,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Shadow_power": 0.53897905,
+        "_Dither": 1,
+        "_rotation": 0.504705,
+        "_Highlight_01_rotation": 0.48749948,
+        "_Highlight_02_rotation": 0.56108,
+        "_Highlight_03_rotation": 0.5,
+        "_Highlight_power": 1,
+        "_Grade_position": 0.6167294,
+        "_Grade_size": 0.67733896,
+        "_Parallax": 1,
+        "_Eye_open": 0
+      },
+      "VectorValues": {
+        "_Eye_position_add": {
+          "x": 1,
+          "y": 1,
+          "z": -0.036974773,
+          "w": 0.06396607
+        },
+        "_Eye_position": {
+          "x": 1.226439,
+          "y": 1.4827557,
+          "z": 0.010352403,
+          "w": 0.033317186
+        },
+        "_Highlight_01_position": {
+          "x": 0.9439876,
+          "y": 1.2579625,
+          "z": 0.024562895,
+          "w": -0.31510115
+        },
+        "_Highlight_02_position": {
+          "x": 2.6010716,
+          "y": 2.4894826,
+          "z": 0.35836262,
+          "w": 0.21177459
+        },
+        "_Highlight_03_position": {
+          "x": 0.9828963,
+          "y": 1.2579612,
+          "z": -0.27686584,
+          "w": -0.12519902
+        },
+        "_Pipil_size": {
+          "x": 1.168025,
+          "y": 1.3781383,
+          "z": 0,
+          "w": 0
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Line_color": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Eye_color_01": {
+          "x": 1,
+          "y": 0.5996264,
+          "z": 0.7709641,
+          "w": 1
+        },
+        "_Eye_color_02": {
+          "x": 0.29738045,
+          "y": 0.18386191,
+          "z": 0.4526152,
+          "w": 0.98762053
+        },
+        "_Eye_color_03": {
+          "x": 0.4967416,
+          "y": 1,
+          "z": 0.99217206,
+          "w": 1
+        },
+        "_Piple_color_01": {
+          "x": 0.24330825,
+          "y": 0.1325841,
+          "z": 0.3188856,
+          "w": 1
+        },
+        "_Piple_color_02": {
+          "x": 0.7391786,
+          "y": 0.5120916,
+          "z": 0.63839394,
+          "w": 0.49459323
+        },
+        "_Piple_color_03": {
+          "x": 0.6407801,
+          "y": 0.93597615,
+          "z": 1,
+          "w": 0
+        },
+        "_Highlight_color_01": {
+          "x": 1,
+          "y": 0.8265141,
+          "z": 0.99303347,
+          "w": 0.4559249
+        },
+        "_Highlight_color_02": {
+          "x": 0.75588834,
+          "y": 0.95887715,
+          "z": 0.79646116,
+          "w": 0.7527013
+        },
+        "_Highlight_color_03": {
+          "x": 0.9748766,
+          "y": 1,
+          "z": 0.86712646,
+          "w": 0.8880665
+        },
+        "_Eye_white_color_01": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Eye_white_color_02": {
+          "x": 0.70004094,
+          "y": 0.75175834,
+          "z": 1,
+          "w": 1
+        },
+        "_Grade_color": {
+          "x": 0.8071896,
+          "y": 0.8071896,
+          "z": 0.8071896,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    },
+    "cf_O_hitomi_R": {
+      "IntValues": {},
+      "FloatValues": {
+        "_Eye_postion_rebers": 0,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Shadow_power": 0.53897905,
+        "_Dither": 1,
+        "_rotation": 0.504705,
+        "_Highlight_01_rotation": 0.48749948,
+        "_Highlight_02_rotation": 0.56108,
+        "_Highlight_03_rotation": 0.5,
+        "_Highlight_power": 1,
+        "_Grade_position": 0.6167294,
+        "_Grade_size": 0.67733896,
+        "_Parallax": 1,
+        "_Eye_open": 0
+      },
+      "VectorValues": {
+        "_Eye_position_add": {
+          "x": 1,
+          "y": 1,
+          "z": 0.038729776,
+          "w": 0.06396607
+        },
+        "_Eye_position": {
+          "x": 1.226439,
+          "y": 1.4827557,
+          "z": -0.010352403,
+          "w": 0.033317186
+        },
+        "_Highlight_01_position": {
+          "x": 0.9439876,
+          "y": 1.2579625,
+          "z": 0.024562895,
+          "w": -0.31510115
+        },
+        "_Highlight_02_position": {
+          "x": 2.6010716,
+          "y": 2.4894826,
+          "z": 0.35836262,
+          "w": 0.21177459
+        },
+        "_Highlight_03_position": {
+          "x": 0.9828963,
+          "y": 1.2579612,
+          "z": -0.27686584,
+          "w": -0.12519902
+        },
+        "_Pipil_size": {
+          "x": 1.168025,
+          "y": 1.3781383,
+          "z": 0,
+          "w": 0
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Line_color": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Eye_color_01": {
+          "x": 1,
+          "y": 0.5996264,
+          "z": 0.7709641,
+          "w": 1
+        },
+        "_Eye_color_02": {
+          "x": 0.29738045,
+          "y": 0.18386191,
+          "z": 0.4526152,
+          "w": 0.98762053
+        },
+        "_Eye_color_03": {
+          "x": 0.4967416,
+          "y": 1,
+          "z": 0.99217206,
+          "w": 1
+        },
+        "_Piple_color_01": {
+          "x": 0.24330825,
+          "y": 0.1325841,
+          "z": 0.3188856,
+          "w": 1
+        },
+        "_Piple_color_02": {
+          "x": 0.7391786,
+          "y": 0.5120916,
+          "z": 0.63839394,
+          "w": 0.49459323
+        },
+        "_Piple_color_03": {
+          "x": 0.6407801,
+          "y": 0.93597615,
+          "z": 1,
+          "w": 0
+        },
+        "_Highlight_color_01": {
+          "x": 1,
+          "y": 0.8265141,
+          "z": 0.99303347,
+          "w": 0.4559249
+        },
+        "_Highlight_color_02": {
+          "x": 0.75588834,
+          "y": 0.95887715,
+          "z": 0.79646116,
+          "w": 0.7527013
+        },
+        "_Highlight_color_03": {
+          "x": 0.9748766,
+          "y": 1,
+          "z": 0.86712646,
+          "w": 0.8880665
+        },
+        "_Eye_white_color_01": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Eye_white_color_02": {
+          "x": 0.70004094,
+          "y": 0.75175834,
+          "z": 1,
+          "w": 1
+        },
+        "_Grade_color": {
+          "x": 0.8071896,
+          "y": 0.8071896,
+          "z": 0.8071896,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    }
+  },
+  "Tooth": {
+    "cf_O_tooth": {
+      "IntValues": {},
+      "FloatValues": {
+        "_ChannelsType": 0,
+        "_TypeSelect": 3,
+        "_RimLight": 0,
+        "_RimMask": 1,
+        "_ShadowColorON": 0,
+        "_AlphaLine": 0,
+        "_Line_texture_onoff": 1,
+        "_shadowextend": 0,
+        "_EmissionType": 0,
+        "_patternclamp1": 0,
+        "_patternclamp2": 0,
+        "_patternclamp3": 0,
+        "_Matcaponoff": 0,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Shadow_power": 1,
+        "_LightCancel": 0,
+        "_alpha": 1,
+        "_AlphaClip": 1,
+        "_Dither": 1,
+        "_Normal_scale": 1,
+        "_Smoothness": 0,
+        "_DetailNormal_scale": 1,
+        "_DetailOcclusion": 1,
+        "_Line_power": 1,
+        "_LineColorIntensity1": 0,
+        "_LineColorIntensity2": 0,
+        "_LineColorIntensity3": 0,
+        "_Line_width": 0.3,
+        "_LineWidthS": 0,
+        "_LineWidthSS": 1,
+        "_Emission": 0,
+        "_EmissionPower": 0,
+        "_UPanner": 0,
+        "_VPanner": 0,
+        "_PatternRemapMax": 1,
+        "_PatternRemapMin": 20,
+        "_UVAspectRatioU": 1,
+        "_UVAspectRatioV": 1,
+        "_PatternScale_01u": 1,
+        "_PatternScale_01v": 1,
+        "_PatternOffset_01u": 0.5,
+        "_PatternOffset_01v": 0.5,
+        "_PatternRotator_01": 0.5,
+        "_PatternScale_02u": 1,
+        "_PatternScale_02v": 1,
+        "_PatternOffset_02u": 0.5,
+        "_PatternOffset_02v": 0.5,
+        "_PatternRotator_02": 0.5,
+        "_PatternScale_03u": 1,
+        "_PatternScale_03v": 1,
+        "_PatternOffset_03u": 0.5,
+        "_PatternOffset_03v": 0.5,
+        "_PatternRotator_03": 0.5,
+        "_Matcap_power_01": 1,
+        "_Matcap_power_02": 1,
+        "_Matcap_power_03": 1
+      },
+      "VectorValues": {
+        "_ShadowSetting": {
+          "x": 1,
+          "y": 0,
+          "z": 0.6,
+          "w": 0.2
+        },
+        "_DetailUV": {
+          "x": 1,
+          "y": 1,
+          "z": 0,
+          "w": 0
+        }
+      },
+      "ColorValues": {
+        "_ShadowColor": {
+          "x": 0.4470588,
+          "y": 0.572549,
+          "z": 0.7450981,
+          "w": 1
+        },
+        "_Line_color": {
+          "x": 0.08490568,
+          "y": 0.08490568,
+          "z": 0.08490568,
+          "w": 1
+        },
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_01": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_02": {
+          "x": 0.20271224,
+          "y": 1,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_03": {
+          "x": 0,
+          "y": 0,
+          "z": 1,
+          "w": 1
+        },
+        "_Main_color_04": {
+          "x": 0.943,
+          "y": 0.943,
+          "z": 0.943,
+          "w": 1
+        },
+        "_Sub_color_01": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        },
+        "_Sub_color_02": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        },
+        "_Sub_color_03": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    },
+    "cf_O_canine": {
+      "IntValues": {},
+      "FloatValues": {
+        "_ChannelsType": 0,
+        "_TypeSelect": 3,
+        "_RimLight": 0,
+        "_RimMask": 1,
+        "_ShadowColorON": 0,
+        "_AlphaLine": 0,
+        "_Line_texture_onoff": 1,
+        "_shadowextend": 0,
+        "_EmissionType": 0,
+        "_patternclamp1": 0,
+        "_patternclamp2": 0,
+        "_patternclamp3": 0,
+        "_Matcaponoff": 0,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Shadow_power": 1,
+        "_LightCancel": 0,
+        "_alpha": 1,
+        "_AlphaClip": 1,
+        "_Dither": 1,
+        "_Normal_scale": 1,
+        "_Smoothness": 0,
+        "_DetailNormal_scale": 1,
+        "_DetailOcclusion": 1,
+        "_Line_power": 1,
+        "_LineColorIntensity1": 0,
+        "_LineColorIntensity2": 0,
+        "_LineColorIntensity3": 0,
+        "_Line_width": 0.3,
+        "_LineWidthS": 0,
+        "_LineWidthSS": 1,
+        "_Emission": 0,
+        "_EmissionPower": 0,
+        "_UPanner": 0,
+        "_VPanner": 0,
+        "_PatternRemapMax": 1,
+        "_PatternRemapMin": 20,
+        "_UVAspectRatioU": 1,
+        "_UVAspectRatioV": 1,
+        "_PatternScale_01u": 1,
+        "_PatternScale_01v": 1,
+        "_PatternOffset_01u": 0.5,
+        "_PatternOffset_01v": 0.5,
+        "_PatternRotator_01": 0.5,
+        "_PatternScale_02u": 1,
+        "_PatternScale_02v": 1,
+        "_PatternOffset_02u": 0.5,
+        "_PatternOffset_02v": 0.5,
+        "_PatternRotator_02": 0.5,
+        "_PatternScale_03u": 1,
+        "_PatternScale_03v": 1,
+        "_PatternOffset_03u": 0.5,
+        "_PatternOffset_03v": 0.5,
+        "_PatternRotator_03": 0.5,
+        "_Matcap_power_01": 1,
+        "_Matcap_power_02": 1,
+        "_Matcap_power_03": 1
+      },
+      "VectorValues": {
+        "_ShadowSetting": {
+          "x": 1,
+          "y": 0,
+          "z": 0.6,
+          "w": 0.2
+        },
+        "_DetailUV": {
+          "x": 1,
+          "y": 1,
+          "z": 0,
+          "w": 0
+        }
+      },
+      "ColorValues": {
+        "_ShadowColor": {
+          "x": 0.4470588,
+          "y": 0.572549,
+          "z": 0.7450981,
+          "w": 1
+        },
+        "_Line_color": {
+          "x": 0.08490568,
+          "y": 0.08490568,
+          "z": 0.08490568,
+          "w": 1
+        },
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_01": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_02": {
+          "x": 0.20271224,
+          "y": 1,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_03": {
+          "x": 0,
+          "y": 0,
+          "z": 1,
+          "w": 1
+        },
+        "_Main_color_04": {
+          "x": 0.943,
+          "y": 0.943,
+          "z": 0.943,
+          "w": 1
+        },
+        "_Sub_color_01": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        },
+        "_Sub_color_02": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        },
+        "_Sub_color_03": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    },
+    "o_tango": {
+      "IntValues": {},
+      "FloatValues": {
+        "_ChannelsType": 0,
+        "_TypeSelect": 0,
+        "_RimLight": 0,
+        "_RimMask": 1,
+        "_ShadowColorON": 0,
+        "_AlphaLine": 0,
+        "_Line_texture_onoff": 1,
+        "_shadowextend": 0,
+        "_EmissionType": 0,
+        "_patternclamp1": 0,
+        "_patternclamp2": 0,
+        "_patternclamp3": 0,
+        "_Matcaponoff": 0,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Shadow_power": 1,
+        "_LightCancel": 0,
+        "_alpha": 1,
+        "_AlphaClip": 1,
+        "_Dither": 1,
+        "_Normal_scale": 1,
+        "_Smoothness": 0,
+        "_DetailNormal_scale": 1.19,
+        "_DetailOcclusion": 1,
+        "_Line_power": 1,
+        "_LineColorIntensity1": 0,
+        "_LineColorIntensity2": 0,
+        "_LineColorIntensity3": 0,
+        "_Line_width": 0.3,
+        "_LineWidthS": 0.452,
+        "_LineWidthSS": 1,
+        "_Emission": 0,
+        "_EmissionPower": 0,
+        "_UPanner": 0,
+        "_VPanner": 0,
+        "_PatternRemapMax": 1,
+        "_PatternRemapMin": 20,
+        "_UVAspectRatioU": 1,
+        "_UVAspectRatioV": 1,
+        "_PatternScale_01u": 1,
+        "_PatternScale_01v": 1,
+        "_PatternOffset_01u": 0.5,
+        "_PatternOffset_01v": 0.5,
+        "_PatternRotator_01": 0.5,
+        "_PatternScale_02u": 1,
+        "_PatternScale_02v": 1,
+        "_PatternOffset_02u": 0.5,
+        "_PatternOffset_02v": 0.5,
+        "_PatternRotator_02": 0.5,
+        "_PatternScale_03u": 1,
+        "_PatternScale_03v": 1,
+        "_PatternOffset_03u": 0.5,
+        "_PatternOffset_03v": 0.5,
+        "_PatternRotator_03": 0.5,
+        "_Matcap_power_01": 1,
+        "_Matcap_power_02": 0.932,
+        "_Matcap_power_03": 1
+      },
+      "VectorValues": {
+        "_ShadowSetting": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        },
+        "_DetailUV": {
+          "x": 1,
+          "y": 1,
+          "z": 0,
+          "w": 0
+        }
+      },
+      "ColorValues": {
+        "_ShadowColor": {
+          "x": 0.4470588,
+          "y": 0.572549,
+          "z": 0.7450981,
+          "w": 1
+        },
+        "_Line_color": {
+          "x": 0.5660378,
+          "y": 0.23228905,
+          "z": 0.23228905,
+          "w": 1
+        },
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_01": {
+          "x": 0.8018868,
+          "y": 0.06430223,
+          "z": 0.06430223,
+          "w": 1
+        },
+        "_Main_color_02": {
+          "x": 0.20271224,
+          "y": 1,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color_03": {
+          "x": 0,
+          "y": 0,
+          "z": 1,
+          "w": 1
+        },
+        "_Main_color_04": {
+          "x": 0.87058824,
+          "y": 0.49362355,
+          "z": 0.49362355,
+          "w": 1
+        },
+        "_Sub_color_01": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        },
+        "_Sub_color_02": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        },
+        "_Sub_color_03": {
+          "x": 0.5,
+          "y": 0.5,
+          "z": 0.5,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    }
+  },
+  "Body": {
+    "p_cf_sv_body_00(Clone)": {
+      "IntValues": {},
+      "FloatValues": {
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5
+      },
+      "VectorValues": {
+        "_Paint_position_01": {
+          "x": 0,
+          "y": -0.32999998,
+          "z": 0,
+          "w": -4
+        },
+        "_Paint_position_02": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        },
+        "_Paint_position_03": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Main_color": {
+          "x": 1,
+          "y": 0.883376,
+          "z": 0.8458339,
+          "w": 1
+        },
+        "_Paint_color_01": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Paint_color_02": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Paint_color_03": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_Sunburn_color": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 0.23529412
+        }
+      },
+      "TextureHashes": {}
+    },
+    "o_body": {
+      "IntValues": {},
+      "FloatValues": {
+        "_TypeSelect": 2,
+        "_RimLight": 1,
+        "_RimMask": 1,
+        "_ShadowColorON": 0,
+        "_Dent_shadow": 1,
+        "_shadowextend": 0,
+        "_Bust_shadowonoff": 0,
+        "_linetexon": 0,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Dither": 1,
+        "_Shadow_power": 0.53897905,
+        "_AlphaMaskuv": 0,
+        "_alpha_a": 0,
+        "_alpha_b": 0,
+        "_Bust_size": 0.54180604,
+        "_Dent_power": 0,
+        "_Skin_red_power": 0.545,
+        "_Line_width": 0.34310693,
+        "_High_light_power": 1,
+        "_Nip_size": 0.51691896,
+        "_Highlight_power": 0.458,
+        "_SpeclarHeight": 0.95,
+        "_Line_power": 1,
+        "_SkinIntensity": 1,
+        "_SiriakaIntensity": 0,
+        "_AseIntensity": 0,
+        "_NureIntensity": 0,
+        "_liquidftop": 0,
+        "_liquidfbot": 0,
+        "_liquidbtop": 0,
+        "_liquidbbot": 0,
+        "_liquidface": 0
+      },
+      "VectorValues": {
+        "_ShadowSetting": {
+          "x": 1,
+          "y": 0.5,
+          "z": 0,
+          "w": 1
+        },
+        "_LiquidTiling": {
+          "x": 0,
+          "y": 0,
+          "z": 4,
+          "w": 4
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_ShadowColor": {
+          "x": 0.4470588,
+          "y": 0.572549,
+          "z": 0.7450981,
+          "w": 1
+        },
+        "_Highlight_color": {
+          "x": 0.9811091,
+          "y": 0.7915553,
+          "z": 0.7018451,
+          "w": 0.402697
+        },
+        "_Nip_color_01": {
+          "x": 1,
+          "y": 0.5215192,
+          "z": 0.4516077,
+          "w": 1
+        },
+        "_Nip_color_02": {
+          "x": 1,
+          "y": 0.6666667,
+          "z": 0.63529414,
+          "w": 1
+        },
+        "_Detail_color_02": {
+          "x": 1,
+          "y": 0,
+          "z": 0,
+          "w": 0.28032658
+        },
+        "_Under_hair_color": {
+          "x": 0.3385213,
+          "y": 0.2698816,
+          "z": 0.2698816,
+          "w": 1
+        },
+        "_Shadow_color": {
+          "x": 0.9011347,
+          "y": 0,
+          "z": 0,
+          "w": 0.9223931
+        },
+        "_Line_color": {
+          "x": 0.42352837,
+          "y": 0.28627348,
+          "z": 0.28627348,
+          "w": 1
+        },
+        "_hohoakacolor": {
+          "x": 0.90099996,
+          "y": 0.18019995,
+          "z": 0.18019995,
+          "w": 0.39607844
+        },
+        "_MainColor": {
+          "x": 1,
+          "y": 0.91857594,
+          "z": 0.8632076,
+          "w": 1
+        }
+      },
+      "TextureHashes": {}
+    }
+  },
+  "Nails": {
+    "o_nail_def01": {
+      "IntValues": {},
+      "FloatValues": {
+        "_TypeSelect": 2,
+        "_RimLight": 1,
+        "_RimMask": 1,
+        "_ShadowColorON": 0,
+        "_Line_textureonoff": 0,
+        "_shadowextend": 0,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Dither": 1,
+        "_Shadow_power": 0.53897905,
+        "_Normal_scale": 1,
+        "_Nail_gloss_power": 0.48333937,
+        "_Line_width": 0.34310693
+      },
+      "VectorValues": {
+        "_Paint_position_offset_01": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        },
+        "_Paint_position_offset_02": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        },
+        "_Paint_position_offset_03": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        },
+        "_ShadowSetting": {
+          "x": 1,
+          "y": 0.5,
+          "z": 0,
+          "w": 1
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_ShadowColor": {
+          "x": 0.4470588,
+          "y": 0.572549,
+          "z": 0.7450981,
+          "w": 1
+        },
+        "_Nail_main_color_01": {
+          "x": 0.8823336,
+          "y": 0.6630069,
+          "z": 0.6099958,
+          "w": 0.2661621
+        },
+        "_Nail_main_color_02": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Nail_main_color_03": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Paint_color_01": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        },
+        "_Paint_color_02": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        },
+        "_Paint_color_03": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        },
+        "_Line_color": {
+          "x": 0.8,
+          "y": 0.8,
+          "z": 0.8,
+          "w": 0
+        }
+      },
+      "TextureHashes": {}
+    },
+    "o_nail_foot": {
+      "IntValues": {},
+      "FloatValues": {
+        "_TypeSelect": 2,
+        "_RimLight": 1,
+        "_RimMask": 1,
+        "_ShadowColorON": 0,
+        "_Line_textureonoff": 0,
+        "_shadowextend": 0,
+        "_QueueOffset": 0,
+        "_QueueControl": 0
+      },
+      "RangeValues": {
+        "_AlphaCutoff": 0.5,
+        "_Dither": 1,
+        "_Shadow_power": 0.53897905,
+        "_Normal_scale": 1,
+        "_Nail_gloss_power": 0.48333937,
+        "_Line_width": 0.34310693
+      },
+      "VectorValues": {
+        "_Paint_position_offset_01": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        },
+        "_Paint_position_offset_02": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        },
+        "_Paint_position_offset_03": {
+          "x": 0,
+          "y": -0.33,
+          "z": 0,
+          "w": -4
+        },
+        "_ShadowSetting": {
+          "x": 1,
+          "y": 0.5,
+          "z": 0,
+          "w": 1
+        }
+      },
+      "ColorValues": {
+        "_EmissionColor": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1
+        },
+        "_ShadowColor": {
+          "x": 0.4470588,
+          "y": 0.572549,
+          "z": 0.7450981,
+          "w": 1
+        },
+        "_Nail_main_color_01": {
+          "x": 0.8823336,
+          "y": 0.6630069,
+          "z": 0.6099958,
+          "w": 0.2661621
+        },
+        "_Nail_main_color_02": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Nail_main_color_03": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "_Paint_color_01": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        },
+        "_Paint_color_02": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        },
+        "_Paint_color_03": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 0
+        },
+        "_Line_color": {
+          "x": 0.8,
+          "y": 0.8,
+          "z": 0.8,
+          "w": 0
+        }
+      },
+      "TextureHashes": {}
+    }
+  },
+  "Coorinates": {
+    "0": {
+      "Hair": {
+        "0": {
+          "hair_b_o_12_00": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 1,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_Ex_hair_color2_onoff": 0,
+              "_Ex_hair_color_onoff": 0,
+              "_Intensity1": 3,
+              "_Intensity2": 1,
+              "_switchi1": 0,
+              "_QueueOffset": 0,
+              "_QueueControl": 1
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_hilightmove2": 1,
+              "_hilightmove": 0,
+              "_hilightmove3": 0,
+              "_LightLength": 0.5,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0
+            },
+            "VectorValues": {},
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color": {
+                "x": 0.3853425,
+                "y": 0.28300914,
+                "z": 0.24678218,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 0.25927824,
+                "y": 0.3156861,
+                "z": 0.32092828,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 0.48840576,
+                "y": 0.48840576,
+                "z": 0.48840576,
+                "w": 1
+              },
+              "_Ex_hair_color": {
+                "x": 0.3853425,
+                "y": 0.28300914,
+                "z": 0.24678218,
+                "w": 1
+              },
+              "_Ex_hair_color2": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Add_skin_color": {
+                "x": 1,
+                "y": 0.883376,
+                "z": 0.8458339,
+                "w": 1
+              },
+              "_Highlight_color": {
+                "x": 0.6474099,
+                "y": 0.5397242,
+                "z": 0.5397242,
+                "w": 1
+              },
+              "_Shadow_color": {
+                "x": 0.3111977,
+                "y": 0.111995734,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          },
+          "hair_b_o_12_00_line": {
+            "IntValues": {},
+            "FloatValues": {
+              "_Ex_hair_color_onoff": 0,
+              "_Received_shadowonoff": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 1
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Line_width": 0.34310693,
+              "_Ligjht_influence": 0.5,
+              "_Point_ligjht_influence": 1,
+              "_Dither": 1,
+              "_Line_color_power": 1
+            },
+            "VectorValues": {},
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color": {
+                "x": 1,
+                "y": 0.7885403,
+                "z": 0.5607843,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 0,
+                "y": 0.02382612,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 0,
+                "y": 1,
+                "z": 0,
+                "w": 1
+              },
+              "_Ex_hair_color": {
+                "x": 1,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Add_skin_color": {
+                "x": 0,
+                "y": 0.02382612,
+                "z": 1,
+                "w": 1
+              },
+              "_Highlight_color": {
+                "x": 0.7547169,
+                "y": 0.5632195,
+                "z": 0.45211816,
+                "w": 0.4901961
+              },
+              "_Shadow_color": {
+                "x": 0.514151,
+                "y": 0.7300838,
+                "z": 1,
+                "w": 1
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          }
+        },
+        "1": {
+          "hair_f_o_03_00": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 1,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_Ex_hair_color2_onoff": 0,
+              "_Ex_hair_color_onoff": 0,
+              "_Intensity1": 3,
+              "_Intensity2": 1,
+              "_switchi1": 0,
+              "_QueueOffset": 0,
+              "_QueueControl": 1
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_hilightmove2": 0.5,
+              "_hilightmove": 0.5,
+              "_hilightmove3": 0,
+              "_LightLength": 0.5,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0
+            },
+            "VectorValues": {},
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color": {
+                "x": 0.3853425,
+                "y": 0.28300914,
+                "z": 0.24678218,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 0.25927824,
+                "y": 0.3156861,
+                "z": 0.32092828,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 0.48840576,
+                "y": 0.48840576,
+                "z": 0.48840576,
+                "w": 1
+              },
+              "_Ex_hair_color": {
+                "x": 0.3853425,
+                "y": 0.28300914,
+                "z": 0.24678218,
+                "w": 1
+              },
+              "_Ex_hair_color2": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Add_skin_color": {
+                "x": 1,
+                "y": 0.883376,
+                "z": 0.8458339,
+                "w": 1
+              },
+              "_Highlight_color": {
+                "x": 0.6474099,
+                "y": 0.5397242,
+                "z": 0.5397242,
+                "w": 1
+              },
+              "_Shadow_color": {
+                "x": 0.3111977,
+                "y": 0.111995734,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          },
+          "hair_f_o_03_00_line": {
+            "IntValues": {},
+            "FloatValues": {
+              "_Ex_hair_color_onoff": 0,
+              "_Received_shadowonoff": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 1
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Line_width": 0.34310693,
+              "_Ligjht_influence": 0.5,
+              "_Point_ligjht_influence": 1,
+              "_Dither": 1,
+              "_Line_color_power": 1
+            },
+            "VectorValues": {},
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color": {
+                "x": 1,
+                "y": 0.7885403,
+                "z": 0.5607843,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 0,
+                "y": 0.02382612,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 0,
+                "y": 1,
+                "z": 0,
+                "w": 1
+              },
+              "_Ex_hair_color": {
+                "x": 1,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Add_skin_color": {
+                "x": 0,
+                "y": 0.02382612,
+                "z": 1,
+                "w": 1
+              },
+              "_Highlight_color": {
+                "x": 0.7547169,
+                "y": 0.5632195,
+                "z": 0.45211816,
+                "w": 0.4901961
+              },
+              "_Shadow_color": {
+                "x": 0.514151,
+                "y": 0.7300838,
+                "z": 1,
+                "w": 1
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          }
+        },
+        "2": {},
+        "3": {}
+      },
+      "Clothes": {
+        "0": {
+          "ct_clothesTop0": {
+            "IntValues": {},
+            "FloatValues": {
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_PatternScale_01u": 0,
+              "_PatternScale_01v": 0,
+              "_PatternOffset_01u": 0.5,
+              "_PatternOffset_01v": 0.5,
+              "_PatternRotator_01": 0.5,
+              "_PatternScale_02u": 0,
+              "_PatternScale_02v": 0,
+              "_PatternOffset_02u": 0.5,
+              "_PatternOffset_02v": 0.5,
+              "_PatternRotator_02": 0.5,
+              "_PatternScale_04u": 0,
+              "_PatternScale_03u": 0,
+              "_PatternScale_04v": 0,
+              "_PatternScale_03v": 0,
+              "_PatternOffset_04u": 0.5,
+              "_PatternOffset_03u": 0.5,
+              "_PatternOffset_04v": 0.5,
+              "_PatternOffset_03v": 0.5,
+              "_PatternRotator_04": 0.5,
+              "_PatternRotator_03": 0.5
+            },
+            "VectorValues": {
+              "_Paint_position_01": {
+                "x": 0.25,
+                "y": 0.19999999,
+                "z": 0,
+                "w": -2
+              },
+              "_Paint_position_02": {
+                "x": 0.25,
+                "y": 0.19999999,
+                "z": 0,
+                "w": -2
+              },
+              "_Paint_position_03": {
+                "x": -0.25,
+                "y": 0.19999999,
+                "z": 0,
+                "w": -2
+              }
+            },
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.93690294,
+                "y": 0.9472864,
+                "z": 0.95699996,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Paint_color_01": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_02": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_03": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_cf_top_tshirt00a_in": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 2,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0.3,
+              "_Matcap_power_02": 0.3,
+              "_Matcap_power_03": 0.3,
+              "_Line_power": 1,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.5,
+                "z": 0.7,
+                "w": 0.3
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 3,
+                "w": 2
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.93690294,
+                "y": 0.9472864,
+                "z": 0.95699996,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0.050980393
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 0
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_cf_top_tshirt00_a_out": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 2,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0.3,
+              "_Matcap_power_02": 0.3,
+              "_Matcap_power_03": 0.3,
+              "_Line_power": 1,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.5,
+                "z": 0.7,
+                "w": 0.3
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 3,
+                "w": 2
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.93690294,
+                "y": 0.9472864,
+                "z": 0.95699996,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0.050980393
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 0
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_cf_top_tshirt00a_skout": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 2,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0.3,
+              "_Matcap_power_02": 0.3,
+              "_Matcap_power_03": 0.3,
+              "_Line_power": 1,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.5,
+                "z": 0.7,
+                "w": 0.3
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 3,
+                "w": 2
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.93690294,
+                "y": 0.9472864,
+                "z": 0.95699996,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0.050980393
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 0
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_cf_top_tshirt00_b": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 2,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0.3,
+              "_Matcap_power_02": 0.3,
+              "_Matcap_power_03": 0.3,
+              "_Line_power": 1,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.5,
+                "z": 0.7,
+                "w": 0.3
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 3,
+                "w": 2
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.93690294,
+                "y": 0.9472864,
+                "z": 0.95699996,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.9372549,
+                "y": 0.9490196,
+                "z": 0.95686275,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0.050980393
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 0
+              }
+            },
+            "TextureHashes": {}
+          }
+        },
+        "1": {
+          "ct_clothesBot0": {
+            "IntValues": {},
+            "FloatValues": {
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_PatternScale_01u": 0,
+              "_PatternScale_01v": 0,
+              "_PatternOffset_01u": 0.5,
+              "_PatternOffset_01v": 0.5,
+              "_PatternRotator_01": 0.5,
+              "_PatternScale_02u": 0,
+              "_PatternScale_02v": 0,
+              "_PatternOffset_02u": 0.5,
+              "_PatternOffset_02v": 0.5,
+              "_PatternRotator_02": 0.5,
+              "_PatternScale_04u": 0,
+              "_PatternScale_03u": 0,
+              "_PatternScale_04v": 0,
+              "_PatternScale_03v": 0,
+              "_PatternOffset_04u": 0.5,
+              "_PatternOffset_03u": 0.5,
+              "_PatternOffset_04v": 0.5,
+              "_PatternOffset_03v": 0.5,
+              "_PatternRotator_04": 0.5,
+              "_PatternRotator_03": 0.5
+            },
+            "VectorValues": {
+              "_Paint_position_01": {
+                "x": 0.049999997,
+                "y": -0.050000004,
+                "z": 0,
+                "w": -4
+              },
+              "_Paint_position_02": {
+                "x": -0.3,
+                "y": -0.050000004,
+                "z": 0,
+                "w": -4
+              },
+              "_Paint_position_03": {
+                "x": -0.33,
+                "y": -0.4,
+                "z": 0,
+                "w": -3
+              }
+            },
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.29411763,
+                "y": 0.35686272,
+                "z": 0.45098042,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.7294118,
+                "y": 0.6627451,
+                "z": 0.517647,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.6509804,
+                "y": 0.5921568,
+                "z": 0.5019608,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Paint_color_01": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_02": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_03": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_cf_bot_denim00": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 1,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 0,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0.3,
+              "_Matcap_power_02": 0.3,
+              "_Matcap_power_03": 0.3,
+              "_Line_power": 1,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.5,
+                "z": 0.5,
+                "w": 0.5
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 2,
+                "w": 1.5
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.12255248,
+                "y": 0.32244122,
+                "z": 0.509434,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.7294118,
+                "y": 0.6627451,
+                "z": 0.517647,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.9150943,
+                "y": 0.78277254,
+                "z": 0.58272517,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 0.95686275,
+                "y": 0.9364497,
+                "z": 0.9185882,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 0.9647059,
+                "z": 0.67058825,
+                "w": 0.15686275
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 0
+              }
+            },
+            "TextureHashes": {}
+          }
+        },
+        "2": {
+          "ct_bra0": {
+            "IntValues": {},
+            "FloatValues": {
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_PatternScale_01u": 0.5,
+              "_PatternScale_01v": 0.5,
+              "_PatternOffset_01u": 0.5,
+              "_PatternOffset_01v": 0.5,
+              "_PatternRotator_01": 0.5,
+              "_PatternScale_02u": 0.5,
+              "_PatternScale_02v": 0.5,
+              "_PatternOffset_02u": 0.5,
+              "_PatternOffset_02v": 0.5,
+              "_PatternRotator_02": 0.5,
+              "_PatternScale_04u": 0,
+              "_PatternScale_03u": 0,
+              "_PatternScale_04v": 0,
+              "_PatternScale_03v": 0,
+              "_PatternOffset_04u": 0.5,
+              "_PatternOffset_03u": 0.5,
+              "_PatternOffset_04v": 0.5,
+              "_PatternOffset_03v": 0.5,
+              "_PatternRotator_04": 0.5,
+              "_PatternRotator_03": 0.5
+            },
+            "VectorValues": {
+              "_Paint_position_01": {
+                "x": -0.099999994,
+                "y": -0.2,
+                "z": 0,
+                "w": -6
+              },
+              "_Paint_position_02": {
+                "x": 0.099999994,
+                "y": -0.2,
+                "z": 0,
+                "w": -6
+              },
+              "_Paint_position_03": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": -3
+              }
+            },
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.8962264,
+                "y": 0.58762014,
+                "z": 0.6864134,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Paint_color_01": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_02": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_03": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_bra_a": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 0,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0,
+              "_Matcap_power_02": 0,
+              "_Matcap_power_03": 0,
+              "_Line_power": 0.5,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.75,
+                "z": 1,
+                "w": 1
+              },
+              "_LiquidTiling": {
+                "x": 0.85,
+                "y": -1.32,
+                "z": 3,
+                "w": 3
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.8962264,
+                "y": 0.58762014,
+                "z": 0.6864134,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_bra_b": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 0,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0,
+              "_Matcap_power_02": 0,
+              "_Matcap_power_03": 0,
+              "_Line_power": 0.5,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.75,
+                "z": 1,
+                "w": 1
+              },
+              "_LiquidTiling": {
+                "x": 0.85,
+                "y": -1.32,
+                "z": 3,
+                "w": 3
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.8962264,
+                "y": 0.58762014,
+                "z": 0.6864134,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          }
+        },
+        "3": {
+          "ct_shorts0": {
+            "IntValues": {},
+            "FloatValues": {
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_PatternScale_01u": 0.5,
+              "_PatternScale_01v": 0.5,
+              "_PatternOffset_01u": 0.5,
+              "_PatternOffset_01v": 0.5,
+              "_PatternRotator_01": 0.5,
+              "_PatternScale_02u": 0.5,
+              "_PatternScale_02v": 0.5,
+              "_PatternOffset_02u": 0.5,
+              "_PatternOffset_02v": 0.5,
+              "_PatternRotator_02": 0.5,
+              "_PatternScale_04u": 0,
+              "_PatternScale_03u": 0,
+              "_PatternScale_04v": 0,
+              "_PatternScale_03v": 0,
+              "_PatternOffset_04u": 0.5,
+              "_PatternOffset_03u": 0.5,
+              "_PatternOffset_04v": 0.5,
+              "_PatternOffset_03v": 0.5,
+              "_PatternRotator_04": 0.5,
+              "_PatternRotator_03": 0.5
+            },
+            "VectorValues": {
+              "_Paint_position_01": {
+                "x": -0.25,
+                "y": -0.19999999,
+                "z": 0,
+                "w": -3
+              },
+              "_Paint_position_02": {
+                "x": 0.25,
+                "y": -0.19999999,
+                "z": 0,
+                "w": -3
+              },
+              "_Paint_position_03": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": -3
+              }
+            },
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.8962264,
+                "y": 0.58762014,
+                "z": 0.6864134,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Paint_color_01": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_02": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_03": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_shorts_a": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 0,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0,
+              "_Matcap_power_02": 0,
+              "_Matcap_power_03": 0,
+              "_Line_power": 0.5,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.3,
+                "z": 1,
+                "w": 1
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 2,
+                "w": 2
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.8962264,
+                "y": 0.58762014,
+                "z": 0.6864134,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_shorts_b": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 0,
+              "_Line_width": 0.34310693,
+              "_Hight": 0,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0,
+              "_Matcap_power_02": 0,
+              "_Matcap_power_03": 0,
+              "_Line_power": 0.5,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.3,
+                "z": 1,
+                "w": 1
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 2,
+                "w": 2
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.8962264,
+                "y": 0.58762014,
+                "z": 0.6864134,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          }
+        },
+        "4": {},
+        "5": {},
+        "6": {
+          "ct_socks0": {
+            "IntValues": {},
+            "FloatValues": {
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_PatternScale_01u": 0,
+              "_PatternScale_01v": 0,
+              "_PatternOffset_01u": 0.5,
+              "_PatternOffset_01v": 0.5,
+              "_PatternRotator_01": 0.5,
+              "_PatternScale_02u": 0,
+              "_PatternScale_02v": 0,
+              "_PatternOffset_02u": 0.5,
+              "_PatternOffset_02v": 0.5,
+              "_PatternRotator_02": 0.5,
+              "_PatternScale_04u": 0,
+              "_PatternScale_03u": 0,
+              "_PatternScale_04v": 0,
+              "_PatternScale_03v": 0,
+              "_PatternOffset_04u": 0.5,
+              "_PatternOffset_03u": 0.5,
+              "_PatternOffset_04v": 0.5,
+              "_PatternOffset_03v": 0.5,
+              "_PatternRotator_04": 0.5,
+              "_PatternRotator_03": 0.5
+            },
+            "VectorValues": {
+              "_Paint_position_01": {
+                "x": 0.13999999,
+                "y": -0.14999998,
+                "z": 0,
+                "w": -3
+              },
+              "_Paint_position_02": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": -3
+              },
+              "_Paint_position_03": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": -3
+              }
+            },
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.91904163,
+                "y": 0.92932504,
+                "z": 0.93899214,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.93911135,
+                "y": 0.93911135,
+                "z": 0.93911135,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Paint_color_01": {
+                "x": 1,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Paint_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Paint_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_cm_socks_00": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_Main_color_switchtest": 0,
+              "_Matcaponoff": 0,
+              "_shadowextend": 0,
+              "_EmissionType": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 0,
+              "_Line_width": 0.34310693,
+              "_Matcap_power_01": 0.3,
+              "_Matcap_power_02": 0.3,
+              "_Matcap_power_03": 0.3,
+              "_Line_power": 1,
+              "_EmissionPower": 0,
+              "_Dent_power": 0,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 0.5,
+                "z": 0.6,
+                "w": 0.2
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.19811317,
+                "y": 0.19811317,
+                "z": 0.19811317,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.5,
+                "y": 0.5,
+                "z": 0.5,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              }
+            },
+            "TextureHashes": {}
+          }
+        },
+        "7": {
+          "ct_shoes0": {
+            "IntValues": {},
+            "FloatValues": {
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_PatternScale_01u": 0,
+              "_PatternScale_01v": 0,
+              "_PatternOffset_01u": 0.5,
+              "_PatternOffset_01v": 0.5,
+              "_PatternRotator_01": 0.5,
+              "_PatternScale_02u": 0,
+              "_PatternScale_02v": 0,
+              "_PatternOffset_02u": 0.5,
+              "_PatternOffset_02v": 0.5,
+              "_PatternRotator_02": 0.5,
+              "_PatternScale_04u": 0,
+              "_PatternScale_03u": 0,
+              "_PatternScale_04v": 0,
+              "_PatternScale_03v": 0,
+              "_PatternOffset_04u": 0.5,
+              "_PatternOffset_03u": 0.5,
+              "_PatternOffset_04v": 0.5,
+              "_PatternOffset_03v": 0.5,
+              "_PatternRotator_04": 0.5,
+              "_PatternRotator_03": 0.5
+            },
+            "VectorValues": {
+              "_Paint_position_01": {
+                "x": 0.06999999,
+                "y": 0.14999998,
+                "z": 0,
+                "w": -3
+              },
+              "_Paint_position_02": {
+                "x": 0,
+                "y": 0.28999996,
+                "z": 0,
+                "w": -3
+              },
+              "_Paint_position_03": {
+                "x": 0.25,
+                "y": 0.26999998,
+                "z": 0,
+                "w": -3
+              }
+            },
+            "ColorValues": {
+              "_EmissionColor": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.95283014,
+                "y": 0.95283014,
+                "z": 0.95283014,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.8632488,
+                "y": 0.65330637,
+                "z": 0.38270098,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.77361345,
+                "y": 0.44685584,
+                "z": 0.120098256,
+                "w": 1
+              },
+              "_Sub_color_01": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_02": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_04": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Sub_color_03": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Paint_color_01": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_02": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              },
+              "_Paint_color_03": {
+                "x": 0.31372547,
+                "y": 0.31372547,
+                "z": 0.31372547,
+                "w": 0.5019608
+              }
+            },
+            "TextureHashes": {}
+          },
+          "o_shoes_01": {
+            "IntValues": {},
+            "FloatValues": {
+              "_TypeSelect": 0,
+              "_RimLight": 1,
+              "_RimMask": 1,
+              "_ShadowColorON": 0,
+              "_shadowextend": 0,
+              "_Main_color_switchtest": 0,
+              "_EmissionType": 0,
+              "_BumpMapScale": 1,
+              "_RimScale": 0,
+              "_Matcaponoff": 0,
+              "_AlphaLine": 1,
+              "_QueueOffset": 0,
+              "_QueueControl": 0
+            },
+            "RangeValues": {
+              "_AlphaCutoff": 0.5,
+              "_Dither": 1,
+              "_Shadow_power": 0.53897905,
+              "_AlphaMaskuv": 1,
+              "_alpha_a": 0,
+              "_alpha_b": 0,
+              "_Line_width": 0.34310693,
+              "_Hight": 0.0033,
+              "_EmissionPower": 0,
+              "_Matcap_power_01": 0.3,
+              "_Matcap_power_02": 0.3,
+              "_Matcap_power_03": 0.3,
+              "_Line_power": 1,
+              "_AseIntensity": 0,
+              "_NureIntensity": 0,
+              "_liquidftop": 0,
+              "_liquidfbot": 0,
+              "_liquidbtop": 0,
+              "_liquidbbot": 0,
+              "_liquidface": 0
+            },
+            "VectorValues": {
+              "_ShadowSetting": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0.1
+              },
+              "_LiquidTiling": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              }
+            },
+            "ColorValues": {
+              "_ShadowColor": {
+                "x": 0.4470588,
+                "y": 0.572549,
+                "z": 0.7450981,
+                "w": 1
+              },
+              "_Main_color_01": {
+                "x": 0.9716981,
+                "y": 0.9716981,
+                "z": 0.9716981,
+                "w": 1
+              },
+              "_Main_color_02": {
+                "x": 0.945098,
+                "y": 0.6487802,
+                "z": 0.5019608,
+                "w": 1
+              },
+              "_Main_color_03": {
+                "x": 0.745283,
+                "y": 0.5888439,
+                "z": 0.43240476,
+                "w": 1
+              },
+              "_Main_color_04": {
+                "x": 1,
+                "y": 0.90792024,
+                "z": 0.759434,
+                "w": 1
+              },
+              "_EmissionColor": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 1
+              },
+              "_Color_Cuvature": {
+                "x": 1,
+                "y": 1,
+                "z": 1,
+                "w": 0.07058824
+              },
+              "_Line_color": {
+                "x": 0,
+                "y": 0,
+                "z": 0,
+                "w": 0
+              }
+            },
+            "TextureHashes": {}
+          }
+        }
+      },
+      "Accessory": {
+        "0": {},
+        "1": {},
+        "2": {},
+        "3": {},
+        "4": {},
+        "5": {},
+        "6": {},
+        "7": {},
+        "8": {},
+        "9": {},
+        "10": {},
+        "11": {},
+        "12": {},
+        "13": {},
+        "14": {},
+        "15": {},
+        "16": {},
+        "17": {},
+        "18": {},
+        "19": {}
+      }
+    },
+    "1": {
+      "Hair": {},
+      "Clothes": {},
+      "Accessory": {}
+    },
+    "2": {
+      "Hair": {},
+      "Clothes": {},
+      "Accessory": {}
+    }
+  }
+}
