@@ -20,7 +20,8 @@ using Character;
 using CharacterCreation;
 using CharacterCreation.UI;
 using System.Text.Json;
-
+using SaveFlgs = Character.HumanData.SaveFileInfo.Flags;
+using LoadFlgs = Character.HumanData.LoadFileInfo.Flags;
 namespace SardineHead
 {
     internal delegate void Either(Action a, Action b);
@@ -329,6 +330,8 @@ namespace SardineHead
                 JsonSerializer.Deserialize<CharacterModifications>(File.ReadAllText(human.CharacterPath(path))) : new CharacterModifications();
         internal static CharacterModifications RestoreDefaults(this Human human) =>
             Instances[human] = JsonSerializer.Deserialize<CharacterModifications>(File.ReadAllText(human.DefaultsPath()));
+        internal static void InitializeModifications(this Human human) =>
+            (!Instances.ContainsKey(human)).Maybe(() => Deserialize(human, human.data.CharaFileName));
         internal static void Delete(string name) =>
             File.Delete(UIFactory.Current.Target.CharacterPath(name));
     }
@@ -723,37 +726,55 @@ namespace SardineHead
                 _ => Hide
             }).With(CancelRefresh).With(ScheduleRefresh);
     }
+    internal class HookImpl
+    {
+        internal Action<Human> ApplyModifications = delegate { };
+        internal Action<Human> InitializeModifications = delegate { };
+        internal Action<HumanData, LoadFlgs> LoadPrefix = delegate { };
+        internal Action<HumanData, LoadFlgs> LoadPostfix = delegate { };
+        internal Action<HumanData, SaveFlgs> SavePostfix = delegate { };
+        internal static HookImpl Application = new HookImpl() {
+            ApplyModifications = human => HandlePaths.Of(human).Load(),
+            InitializeModifications = human => human.InitializeModifications()
+        };
+        internal static HookImpl CharacterCreation = new HookImpl() {
+            LoadPrefix = (data, flags) =>
+                ((flags & LoadFlgs.Fusion) != LoadFlgs.None)
+                    .Maybe(() => UIFactory.Current?.RestoreDefaults()),
+            LoadPostfix = (data, flags) =>
+                ((flags & LoadFlgs.Fusion) != LoadFlgs.None)
+                   .Maybe(() => UIFactory.Current?.Deserialize(data.CharaFileName)),
+            SavePostfix = (data, flags) =>
+                UIFactory.Current?.Serialize(data.CharaFileName)
+        };
+        internal static HookImpl Default = new HookImpl();
+    }
     internal static class Hooks
     {
-        internal static Action<Human> CoordinateHook = delegate { };
-        internal static Action<Human> CharacterHook = delegate { };
+        internal static HookImpl Impl;
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.CreateClothesTexture))]
-        internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance) => CoordinateHook(__instance.human);
+        internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance) => Impl.ApplyModifications(__instance.human);
         [HarmonyPostfix]
         [HarmonyPatch(typeof(Human), nameof(Human.SetCreateTexture))]
-        internal static void HumanSetCreateTexturePostfix(Human __instance) => CharacterHook(__instance);
-        internal static Action<HumanData, HumanData.LoadFileInfo.Flags> LoadPrefix = delegate { };
-        internal static Action<HumanData, HumanData.LoadFileInfo.Flags> LoadPostfix = delegate { };
-        internal static Action<HumanData, HumanData.SaveFileInfo.Flags> SavePostfix = delegate { };
+        internal static void HumanSetCreateTexturePostfix(Human __instance) => Impl.InitializeModifications(__instance);
         [HarmonyPrefix]
         [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanData), nameof(HumanData.LoadFile), typeof(Il2CppSystem.IO.BinaryReader), typeof(HumanData.LoadFileInfo.Flags))]
-        internal static void HumanDataLoadFilePrefix(HumanData __instance, HumanData.LoadFileInfo.Flags flags) => LoadPrefix(__instance, flags);
+        [HarmonyPatch(typeof(HumanData), nameof(HumanData.LoadFile), typeof(Il2CppSystem.IO.BinaryReader), typeof(LoadFlgs))]
+        internal static void HumanDataLoadFilePrefix(HumanData __instance, LoadFlgs flags) => Impl.LoadPrefix(__instance, flags);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanData), nameof(HumanData.LoadFile), typeof(Il2CppSystem.IO.BinaryReader), typeof(HumanData.LoadFileInfo.Flags))]
-        internal static void HumanDataLoadFilePostfix(HumanData __instance, HumanData.LoadFileInfo.Flags flags) => LoadPostfix(__instance, flags);
+        [HarmonyPatch(typeof(HumanData), nameof(HumanData.LoadFile), typeof(Il2CppSystem.IO.BinaryReader), typeof(LoadFlgs))]
+        internal static void HumanDataLoadFilePostfix(HumanData __instance, LoadFlgs flags) => Impl.LoadPostfix(__instance, flags);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanData), nameof(HumanData.SaveFile), typeof(Il2CppSystem.IO.Stream), typeof(HumanData.SaveFileInfo.Flags))]
-        internal static void HumanDataSaveFilePostfix(HumanData __instance, HumanData.SaveFileInfo.Flags flags) => SavePostfix(__instance, flags);
+        [HarmonyPatch(typeof(HumanData), nameof(HumanData.SaveFile), typeof(Il2CppSystem.IO.Stream), typeof(SaveFlgs))]
+        internal static void HumanDataSaveFilePostfix(HumanData __instance, SaveFlgs flags) => Impl.SavePostfix(__instance, flags);
+        [HarmonyPrefix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(CustomCharaFile), nameof(CustomCharaFile.DeleteCharaFile))]
         internal static void CustomCharaFileDeleteCharaFilePrefix(CustomCharaFile __instance) =>
-            __instance.ListCtrl.GetSelectIndex()
-                .Select(i => __instance.ListCtrl.fileList[i])
-                .Do(file => ModificationExtension.Delete(file.FileName));
+            ModificationExtension.Delete(__instance.ListCtrl.GetSelectTopInfo().FileName);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(CategorySelection), nameof(CategorySelection.OpenView), typeof(int))]
@@ -763,7 +784,6 @@ namespace SardineHead
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(ThumbnailButton), nameof(ThumbnailButton.Set))]
         internal static void ThumbnailButtonOpenPostfix() => UIFactory.ScheduleRefresh();
-        internal static ManualLogSource Log;
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(Scene), nameof(Scene.LoadStart), typeof(Scene.Data), typeof(bool))]
@@ -771,27 +791,11 @@ namespace SardineHead
             __result = data.LevelName switch
             {
                 "CustomScene" => __result.ContinueWith(UIFactory.Initialize)
-                    .With(() => LoadPrefix = (data, flags) =>
-                        ((flags & HumanData.LoadFileInfo.Flags.Fusion) != HumanData.LoadFileInfo.Flags.None)
-                            .Maybe(() => UIFactory.Current?.RestoreDefaults()))
-                    .With(() => LoadPostfix = (data, flags) =>
-                        ((flags & HumanData.LoadFileInfo.Flags.Fusion) != HumanData.LoadFileInfo.Flags.None)
-                            .Maybe(() => UIFactory.Current?.Deserialize(data.CharaFileName)))
-                    .With(() => SavePostfix = (data, flags) => UIFactory.Current?.Serialize(data.CharaFileName))
-                    .With(() => CharacterHook = delegate { })
-                    .With(() => CoordinateHook = delegate { }),
+                    .With(() => Impl = HookImpl.CharacterCreation),
                 "Simulation" => __result
-                    .With(() => LoadPrefix = delegate { })
-                    .With(() => LoadPostfix = delegate { })
-                    .With(() => SavePostfix = delegate { })
-                    .With(() => CharacterHook = human => HandlePaths.Of(human).Deserialize(human.data.CharaFileName))
-                    .With(() => CoordinateHook = human => HandlePaths.Of(human).Load()),
+                    .With(() => Impl = HookImpl.Application),
                 _ => __result
-                    .With(() => LoadPrefix = delegate { })
-                    .With(() => LoadPostfix = delegate { })
-                    .With(() => SavePostfix = delegate { })
-                    .With(() => CharacterHook = delegate { })
-                    .With(() => CoordinateHook = delegate { })
+                    .With(() => Impl = HookImpl.Default),
             };
     }
     [BepInProcess(Process)]
@@ -801,12 +805,10 @@ namespace SardineHead
         public const string Process = "SamabakeScramble";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
         private Harmony Patch;
-        public override void Load() {
-            Hooks.Log = Log;
+        public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks");
-        }
         public override bool Unload() =>
             true.With(() => Patch.UnpatchSelf()) && base.Unload();
     }
