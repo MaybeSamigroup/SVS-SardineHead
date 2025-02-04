@@ -8,8 +8,7 @@ Now sardine head persist (smells fishy).
 
 Extension data will be incompatible in future release.
 
-whole shader properties are stored in extension data,
-then some character state dependant properties like sweat, wet, liquid may be overriden by this mod.
+Some character state dependant properties like sweat, wet, liquid may be overriden by this mod, modify them with caution.
 
 # Prerequests
 
