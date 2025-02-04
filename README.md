@@ -22,3 +22,7 @@ Extract the release to game root.
 # How to use
 
 Start character creation and edit face, body, hair, clothes and accessories; you'll see additional UI.
+
+To show / hide the ui, you can use keyboard shortcut.
+
+Ctrl + s is mapped as default and can be configured through plugin setting. 
