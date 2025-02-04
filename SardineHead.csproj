@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net6</TargetFramework>
-    <AssemblyName>SardineHead</AssemblyName>
-    <Description>runtime texture and material modifier tool for SamabakeScramble Character Creation</Description>
-    <Version>0.1.0</Version>
-    <LangVersion>latest</LangVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GamePath>$([MSBuild]::GetRegistryValue('HKEY_CURRENT_USER\Software\ILLGAMES\SamabakeScramble','INSTALLDIR'))</GamePath>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net6</TargetFramework>
+        <AssemblyName>SardineHead</AssemblyName>
+        <Description>runtime texture and material modifier tool for SamabakeScramble Character Creation</Description>
+        <Version>0.1.0</Version>
+        <LangVersion>latest</LangVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <GamePath>$([MSBuild]::GetRegistryValue('HKEY_CURRENT_USER\Software\ILLGAMES\SamabakeScramble','INSTALLDIR'))</GamePath>
+    </PropertyGroup>
 	<ItemGroup>
 		<Reference Include="0Harmony">
 			<HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath>
@@ -71,6 +71,10 @@
 		</Reference>
 		<Reference Include="System.Windows.Forms">
 			<HintPath>$(GamePath)\dotnet\System.Windows.Forms.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="BepinEx.KeyboardShortcut">
+			<HintPath>$(GamePath)\BepInEx\plugins\ConfigurationManager\BepinEx.KeyboardShortcut.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
