@@ -2,23 +2,28 @@
 
 Runtime texture and material modifier tool for SamabakeScramble character creation
 
-Currently, this is preview and sample for modders.
+Currently, pretty unstable release.
 
-~Now sardine head persist (smells fishy).~
-
-Once you save the game, modifications will be lost again, and now struggling to solve this.
-
-Extension data will be incompatible in future release.
+Now sardine head persist (smells fishy).
 
 Some character state dependant properties like sweat, wet, liquid may be overriden by this mod, modify them with caution.
 
 # Prerequests
 
- * BepInEx v6
+ * [BepInEx v6+](https://github.com/BepInEx/BepInEx)
+ * [Fishbone](https://github.com/MaybeSamigroup/SVS-Fishbone)
 
 # Installation
 
 Extract the release to game root.
+
+# Upgrade
+
+These directories contained in previous releases are no longer used.
+Please delete it.
+
+ * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/chara
+ * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/textures
 
 # How to use
 
