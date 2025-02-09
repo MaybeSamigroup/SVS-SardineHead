@@ -4,14 +4,13 @@ using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using UniRx;
-using UniRx.Triggers;
 using Cysharp.Threading.Tasks;
-using Il2CppSystem.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering;
@@ -19,32 +18,14 @@ using TMPro;
 using Manager;
 using Character;
 using CharacterCreation;
-using CharacterCreation.UI;
-using ILLGames.Component;
-using SaveFlgs = Character.HumanData.SaveFileInfo.Flags;
-using LoadFlgs = Character.HumanData.LoadFileInfo.Flags;
+using ILLGames.Unity.Component;
 using Mods = System.Collections.Generic.Dictionary<string, SardineHead.Modifications>;
+using CharaLimit = Character.HumanData.LoadLimited.Flags;
+using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
+using Fishbone;
 
 namespace SardineHead
 {
-    internal delegate void Either(Action a, Action b);
-    internal static class FunctionalExtension
-    {
-        internal static Either Either(bool value) => value ? (left, right) => right() : (left, right) => left();
-        internal static void Either(this bool value, Action left, Action right) => Either(value)(left, right);
-        internal static void Maybe(this bool value, Action maybe) => value.Either(() => { }, maybe);
-        internal static Action Apply<T>(this T input, Action<T> action) => () => action(input);
-        internal static T With<T>(this T input, Action sideEffect)
-        {
-            sideEffect();
-            return input;
-        }
-        internal static T With<T>(this T input, Action<T> sideEffect)
-        {
-            sideEffect(input);
-            return input;
-        }
-    }
     public struct Quad : IEquatable<Quad>
     {
         public float x { get; set; }
@@ -66,28 +47,30 @@ namespace SardineHead
     }
     public class Modifications
     {
-       public Dictionary<string, int> IntValues { get; init; } = new();
+        public Dictionary<string, int> IntValues { get; init; } = new();
         public Dictionary<string, float> FloatValues { get; init; } = new();
         public Dictionary<string, float> RangeValues { get; init; } = new();
         public Dictionary<string, Quad> VectorValues { get; init; } = new();
         public Dictionary<string, Quad> ColorValues { get; init; } = new();
         public Dictionary<string, string> TextureHashes { get; init; } = new();
     }
-    internal static partial class ModificationExtension {
-        internal static Modifications Difference(this Modifications mods, Modifications refs) => new() {
+    internal static partial class ModificationExtension
+    {
+        internal static Modifications Difference(this Modifications mods, Modifications refs) => new()
+        {
             IntValues = mods.IntValues.Difference(refs.IntValues),
             FloatValues = mods.FloatValues.Difference(refs.FloatValues),
             RangeValues = mods.RangeValues.Difference(refs.RangeValues),
             VectorValues = mods.VectorValues.Difference(refs.VectorValues),
             ColorValues = mods.ColorValues.Difference(refs.ColorValues),
-            TextureHashes = mods.TextureHashes.Difference(refs.TextureHashes)
+            TextureHashes = mods.TextureHashes
         };
         internal static Dictionary<string, T> Difference<T>(
-            this Dictionary<string, T> mods, Dictionary<string, T> refs) where T: IEquatable<T> =>
+            this Dictionary<string, T> mods, Dictionary<string, T> refs) where T : IEquatable<T> =>
                 mods.Where(entry => !refs.ContainsKey(entry.Key) || !entry.Value.Equals(refs[entry.Key]))
                     .ToDictionary(entry => entry.Key, entry => entry.Value);
         // transform current material shader properties into (material owner name) => (modifications)
-        internal static Mods ToMods(this IEnumerable<MaterialHandle> handles) => 
+        internal static Mods ToMods(this IEnumerable<MaterialHandle> handles) =>
             handles.ToDictionary(handle => handle.Label, handle => new Modifications().With(handle.Store));
         // apply stored (material owner name => modifications) to current materials
         internal static void Apply(this Mods mods, IEnumerable<MaterialHandle> handles) =>
@@ -231,23 +214,27 @@ namespace SardineHead
         private void ApplyTooth(HandlePaths paths) => Tooth.Apply(paths.Tooth);
         private void ApplyBody(HandlePaths paths) => Body.Apply(paths.Body);
         private void ApplyNails(HandlePaths paths) => Nails.Apply(paths.Nails);
-        internal void Clear() => new List<Mods>() { Face, Eyebrows, Eyelines, Eyes, Tooth, Body, Nails }.Do(item => item.Clear());
+        internal void Clear() =>
+            new List<Mods>() {
+                 Face, Eyebrows, Eyelines, Eyes, Tooth, Body, Nails
+            }.With(ClearCoordinates).Do(item => item.Clear());
+        internal void ClearCoordinates() => Coordinates.Values.Do(coordinate => coordinate.Clear());
     }
     public class CoordinateModifications
     {
         public Dictionary<int, Mods> Hair { get; set; } = new();
         public Dictionary<int, Mods> Clothes { get; set; } = new();
         public Dictionary<int, Mods> Accessory { get; set; } = new();
-        private Dictionary<int, Mods> ReferenceHair { get; set; } = new ();
-        private Dictionary<int, Mods> ReferenceClothes { get; set; } = new ();
-        private Dictionary<int, Mods> ReferenceAccessory { get; set; } = new ();
+        private Dictionary<int, Mods> ReferenceHair { get; set; } = new();
+        private Dictionary<int, Mods> ReferenceClothes { get; set; } = new();
+        private Dictionary<int, Mods> ReferenceAccessory { get; set; } = new();
         internal void Store(HandlePaths paths) => paths.With(StoreHair).With(StoreClothes).With(StoreAccessory);
         private void StoreHair(HandlePaths paths) =>
            Enumerable.Range(0, 4).Do(index => index.StoreDifference(ReferenceHair, Hair, paths.Hair(index).ToMods()));
         private void StoreClothes(HandlePaths paths) =>
-            Enumerable.Range(0,8).Do(index => index.StoreDifference(ReferenceClothes, Clothes, paths.Clothes(index).ToMods()));
+            Enumerable.Range(0, 8).Do(index => index.StoreDifference(ReferenceClothes, Clothes, paths.Clothes(index).ToMods()));
         private void StoreAccessory(HandlePaths paths) =>
-            Enumerable.Range(0,20).Do(index => index.StoreDifference(ReferenceAccessory, Accessory, paths.Accessory(index).ToMods()));
+            Enumerable.Range(0, 20).Do(index => index.StoreDifference(ReferenceAccessory, Accessory, paths.Accessory(index).ToMods()));
         internal void Apply(HandlePaths paths) => paths.With(ApplyHair).With(ApplyClothes).With(ApplyAccessory);
         private void ApplyHair(HandlePaths paths) =>
            Enumerable.Range(0, 4).Do(index => Hair.GetValueOrDefault(index)?.Apply(paths.Hair(index)));
@@ -259,22 +246,24 @@ namespace SardineHead
             Hair, Clothes, Accessory, ReferenceHair, ReferenceClothes, ReferenceAccessory
         }.Do(item => item.Clear());
     }
-    internal static partial class ModificationExtension {
+    internal static partial class ModificationExtension
+    {
         // If keys different from reference, discard previous and keep next as new reference
         internal static void StoreDifference(this int index, Dictionary<int, Mods> refs, Dictionary<int, Mods> prev, Mods next) =>
-            (refs.ContainsKey(index) && Equals(refs[index].Keys, next.Keys)).Either(
-                () => prev.With(() => refs[index] = next)[index] = new (),
-                () => prev[index] = next.Difference(refs[index]));
-        internal static bool Equals(IEnumerable<string> refs, IEnumerable<string> mods) =>
+            index.KeysUnmatch(refs, next).Either(
+                () => prev[index] = next.Difference(refs[index]),
+                () => index.KeysUnmatch(prev, refs[index] = next).Maybe(() => prev[index] = new()));
+        private static bool KeysUnmatch(this int index, Dictionary<int, Mods> refs, Mods mods) =>
+            !refs.ContainsKey(index) || !Equals(refs[index].Keys, mods.Keys);
+        private static bool Equals(IEnumerable<string> refs, IEnumerable<string> mods) =>
             Enumerable.Range(0, Math.Max(refs.Count(), mods.Count()))
                 .All(index => string.Equals(refs.ElementAtOrDefault(index), mods.ElementAtOrDefault(index)));
         internal static Mods Difference(this Mods mods, Mods refs) =>
-            mods.ToDictionary(entry => entry.Key, entry => entry.Value.Difference(refs[entry.Key]));
+            mods.ToDictionary(entry => entry.Key, entry => entry.Value.Difference(refs.GetValueOrDefault(entry.Key) ?? new()));
     }
     internal static class TextureExtension
     {
-        private static string TexturePath(string hash) =>
-            Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Guid, "textures", hash);
+        private static readonly string TexturePath = Path.Combine(Plugin.Guid, "textures");
         private static Dictionary<string, byte[]> Binaries = new();
         private static string Hash(this byte[] input)
         {
@@ -284,8 +273,7 @@ namespace SardineHead
             }
         }
         internal static string Store(this Texture value) => Binaries.ContainsKey(value.name) ? value.name : null;
-        internal static RenderTexture Apply(this string value) =>
-            Binaries.GetValueOrDefault(value)?.Import() ?? TexturePath(value).Import();
+        internal static RenderTexture Apply(this string value) => Binaries[value].Import();
         internal static RenderTexture Import(this string path) => File.ReadAllBytes(path).Import();
         private static RenderTexture Import(this byte[] input) =>
             new Texture2D(256, 256)
@@ -306,52 +294,38 @@ namespace SardineHead
                 Graphics.Blit(tex, tmp);
                 t2d.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
             }).With(() => RenderTexture.ReleaseTemporary(tmp));
-        internal static void Dispose() => Binaries.Clear();
-        internal static void Serialize(string hash) =>
-            (!File.Exists(TexturePath(hash))).Maybe(() => File.WriteAllBytes(TexturePath(hash), Binaries[hash]));
+        private static void Serialize(this string hash, Stream stream) =>
+            new BinaryWriter(stream).Write(Binaries[hash]);
+        private static Action<Stream> Deserialize(this string hash, int size) =>
+            stream => Binaries[hash] = new BinaryReader(stream).ReadBytes(size);
+        internal static Action<string> Serialize(ZipArchive archive) => hash =>
+            archive.CreateEntry(Path.Combine(TexturePath, hash)).Open().With(hash.Serialize).Close();
+        internal static void Deserialize(ZipArchive archive) =>
+            archive.Entries
+                .Where(entry => entry.FullName.StartsWith(TexturePath))
+                .Where(entry => !Binaries.ContainsKey(entry.Name))
+                .Do(entry => entry.Open().With(entry.Name.Deserialize((int)entry.Length)).Close());
+        internal static void Initialize<T>() where T : SingletonInitializer<T> =>
+            Util.Hook<T>(Binaries.Clear, Binaries.Clear);
     }
     internal class HandlePaths
     {
-        internal static HandlePaths Of(HumanData data) =>
-            Of(Human.Find((Func<Human, bool>)(human => human.data == data)));
-        internal static HandlePaths Of(Human human) => human == null ? null : new HandlePaths(human);
         internal HandlePaths(Human target) => Target = target.With(ModificationExtension.Register);
         internal Human Target { get; init; }
-        internal IEnumerable<MaterialHandle> Face
-        {
-            get => ControlMaterial.Of(Target?.face)
-                .Concat(MaterialHandle.Of(Target?.face?.rendFace));
-        }
-        internal IEnumerable<MaterialHandle> Eyebrows
-        {
-            get => MaterialHandle.Of(Target?.face?.rendEyebrow);
-        }
-        internal IEnumerable<MaterialHandle> Eyelines
-        {
-            get => MaterialHandle.Of(Target?.face?.rendEyelid)
-                .Concat(MaterialHandle.Of(Target?.face?.rendEyeline));
-        }
-        internal IEnumerable<MaterialHandle> Eyes
-        {
-            get => MaterialHandle.Of(Target?.face?.rendEye?[0])
-                .Concat(MaterialHandle.Of(Target?.face?.rendEye?[1]));
-        }
-        internal IEnumerable<MaterialHandle> Tooth
-        {
-            get => MaterialHandle.Of(Target?.face?.rendTooth)
-                .Concat(MaterialHandle.Of(Target?.face?.rendDoubleTooth))
-                .Concat(MaterialHandle.Of(Target?.face?.rendTongueFace));
-        }
-        internal IEnumerable<MaterialHandle> Body
-        {
-            get => ControlMaterial.Of(Target?.body)
-                .Concat(MaterialHandle.Of(Target?.body?.rendBody));
-        }
-        internal IEnumerable<MaterialHandle> Nails
-        {
-            get => MaterialHandle.Of(Target?.body?.hand?.nailObject?.obj)
-                .Concat(MaterialHandle.Of(Target?.body?.leg?.nailObject?.obj));
-        }
+        internal IEnumerable<MaterialHandle> Face => ControlMaterial
+            .Of(Target?.face).Concat(MaterialHandle.Of(Target?.face?.rendFace));
+        internal IEnumerable<MaterialHandle> Eyebrows => MaterialHandle
+            .Of(Target?.face?.rendEyebrow);
+        internal IEnumerable<MaterialHandle> Eyelines => MaterialHandle
+            .Of(Target?.face?.rendEyelid).Concat(MaterialHandle.Of(Target?.face?.rendEyeline));
+        internal IEnumerable<MaterialHandle> Eyes => MaterialHandle
+            .Of(Target?.face?.rendEye?[0]).Concat(MaterialHandle.Of(Target?.face?.rendEye?[1]));
+        internal IEnumerable<MaterialHandle> Tooth => MaterialHandle
+            .Of(Target?.face?.rendTooth).Concat(MaterialHandle.Of(Target?.face?.rendDoubleTooth)).Concat(MaterialHandle.Of(Target?.face?.rendTongueFace));
+        internal IEnumerable<MaterialHandle> Body => ControlMaterial
+            .Of(Target?.body).Concat(MaterialHandle.Of(Target?.body?.rendBody));
+        internal IEnumerable<MaterialHandle> Nails => MaterialHandle
+            .Of(Target?.body?.hand?.nailObject?.obj).Concat(MaterialHandle.Of(Target?.body?.leg?.nailObject?.obj));
         internal IEnumerable<MaterialHandle> Hair(int index) =>
             Target?.hair?.hairs?[index]?.renderers?.SelectMany(MaterialHandle.Of) ?? [];
         internal IEnumerable<MaterialHandle> Clothes(int index) =>
@@ -361,16 +335,11 @@ namespace SardineHead
         internal void Store() => Target.Modifications().Store(this);
         internal void Apply() => Target.Modifications().Apply(this);
         internal void Clear() => Target.Modifications().Clear();
-        internal void Serialize(string name) => Target.Serialize(name);
-        internal void Deserialize(string name) =>
-            Target.With(Store).With(() => UniTask.NextFrame().ContinueWith((Action)Apply)).Deserialize(name);
     }
     internal static partial class ModificationExtension
     {
-        private static Dictionary<Human, CharacterModifications> Instances = new();
-        internal static CharacterModifications Modifications(this Human human) => Instances[human];
-        internal static void Register(this Human human) => Instances.TryAdd(human, new CharacterModifications());
-        internal static void Dispose() => Instances.Clear();
+        internal static CharacterModifications Modifications(this Human human) => Humans[human];
+        internal static void Register(this Human human) => Humans.TryAdd(human, new CharacterModifications());
         internal static IEnumerable<Modifications> Aggregate(this CharacterModifications mods) =>
             mods.Coordinates.Values.SelectMany(Aggregate)
                 .Concat(mods.Face.Values).Concat(mods.Eyebrows.Values).Concat(mods.Eyelines.Values)
@@ -379,82 +348,70 @@ namespace SardineHead
             mods.Hair.Values.SelectMany(values => values.Values)
                 .Concat(mods.Clothes.Values.SelectMany(values => values.Values))
                 .Concat(mods.Accessory.Values.SelectMany(values => values.Values));
-        internal static string Gender(this Human human) => human.sex == 0 ? "male" : "female";
-        private static string CharacterPath(this Human human, string name) =>
-            Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Guid, "chara", human.Gender(), $"{name}.json");
-        private static void Serialize(CharacterModifications mods) =>
-            mods.Aggregate().SelectMany(mod => mod.TextureHashes.Values).Do(TextureExtension.Serialize);
-        internal static void Serialize(this Human human, string path) =>
-            File.WriteAllText(human.CharacterPath(path),
-                JsonSerializer.Serialize(Instances[human].With(Serialize), new JsonSerializerOptions { WriteIndented = true }));
-        internal static CharacterModifications Deserialize(this Human human, string path) =>
-            Instances[human] = File.Exists(human.CharacterPath(path)) ?
-                JsonSerializer.Deserialize<CharacterModifications>(File.ReadAllText(human.CharacterPath(path))) : new CharacterModifications();
-        internal static void InitializeModifications(this Human human) =>
-            (!Instances.ContainsKey(human)).Maybe(() => Deserialize(human, human.data.CharaFileName));
-        internal static void Delete(string name) =>
-            File.Delete(UIFactory.Current.Target.CharacterPath(name));
+        private static readonly string CharacterPath = Path.Combine(Plugin.Guid, "modifications.json");
+        private static void Serialize(this CharacterModifications mods, ZipArchive archive) =>
+            mods.Aggregate().SelectMany(mod => mod.TextureHashes.Values)
+                .Distinct().Do(TextureExtension.Serialize(archive));
+        private static void Serialize(this ZipArchive archive, CharacterModifications mods) =>
+            new StreamWriter(archive.CreateEntry(CharacterPath).Open())
+                .With(stream => stream.Write(JsonSerializer.Serialize(mods))).Close();
+        internal static void Serialize(this Human human, ZipArchive archive) =>
+            Humans[human].With(new HandlePaths(human).Store).With(archive.Serialize).Serialize(archive);
+        internal static void Serialize(this SaveData.Actor actor, ZipArchive archive) =>
+            Actors.GetValueOrDefault(actor)?.With(archive.Serialize)?.Serialize(archive);
+        internal static void Deserialize(this Human human, CharaLimit limits, ZipArchive archive) =>
+            archive.With(TextureExtension.Deserialize).GetEntry(CharacterPath)?.Open()
+                ?.With(human.Deserialize(limits))?.With(UIFactory.Current.Store)?.With(UIFactory.Current.Apply).Close();
+        private static Action<CharaLimit> MergeBody(CharacterModifications src, CharacterModifications dst) =>
+            limits => (dst.Body, dst.Nails) =
+                (CharaLimit.None != (limits | CharaLimit.Body))
+                     ? (src.Body, src.Nails)
+                     : (dst.Body, dst.Nails);
+        private static Action<CharaLimit> MergeFace(CharacterModifications src, CharacterModifications dst) =>
+            limits => (dst.Face, dst.Eyebrows, dst.Eyelines, dst.Eyes) =
+                (CharaLimit.None != (limits | CharaLimit.Face))
+                     ? (src.Face, src.Eyebrows, src.Eyes, src.Tooth)
+                     : (dst.Face, dst.Eyebrows, dst.Eyes, dst.Tooth);
+        private static Action<CharaLimit> MergeHair(CharacterModifications src, CharacterModifications dst) =>
+            limits => (dst.Coordinates[0].Hair, dst.Coordinates[1].Hair, dst.Coordinates[2].Hair) =
+                (CharaLimit.None != (limits | CharaLimit.Hair))
+                    ? (src.Coordinates[0].Hair, src.Coordinates[1].Hair, src.Coordinates[2].Hair)
+                    : (dst.Coordinates[0].Hair, dst.Coordinates[1].Hair, dst.Coordinates[2].Hair);
+        private static Action<CharaLimit> MergeCoordinate(CharacterModifications src, CharacterModifications dst) =>
+           limits => dst.Coordinates = (CharaLimit.None != (limits | CharaLimit.Coorde)) ? src.Coordinates : dst.Coordinates;
+        private static void Merge(this CharaLimit limits, CharacterModifications src, CharacterModifications dst) =>
+            limits.With(MergeBody(src, dst)).With(MergeFace(src, dst)).With(MergeHair(src, dst)).With(MergeCoordinate(src, dst));
+        private static Action<Stream> Deserialize(this Human human, CharaLimit limits) =>
+            stream => limits.Merge(JsonSerializer.Deserialize<CharacterModifications>(stream), Humans[human]);
+        internal static void Deserialize(this SaveData.Actor actor, Human human, ZipArchive archive) =>
+            archive.With(TextureExtension.Deserialize).GetEntry(CharacterPath)?.Open()?.With(actor.Deserialize(human))?.Close();
+        private static Action<Stream> Deserialize(this SaveData.Actor actor, Human human) =>
+            stream => Actors[actor] = Humans[human] = JsonSerializer.Deserialize<CharacterModifications>(stream);
+        private readonly static Dictionary<Human, CharacterModifications> Humans = [];
+        private readonly static Dictionary<SaveData.Actor, CharacterModifications> Actors = [];
+        internal static void Initialize<T>() where T : SingletonInitializer<T> =>
+            Util.Hook<T>((Action)Humans.Clear + Actors.Clear, (Action)Humans.Clear + Actors.Clear);
     }
     internal static class UIRef
     {
-        internal static Transform Window
-        {
-            get => SV.Config.ConfigWindow.Instance.transform
+        internal static Transform Window => SV.Config.ConfigWindow.Instance.transform
                 .Find("Canvas").Find("Background").Find("MainWindow");
-        }
         internal static Transform Content(this Transform tf) =>
             tf.Find("Settings").Find("Scroll View").Find("Viewport").Find("Content");
-        internal static Transform SectionTitle
-        {
-            get => Window.Content().Find("CameraSetting").Find("imgTitle");
-        }
-        internal static GameObject Label
-        {
-            get => Window.Content().Find("CameraSetting").Find("Content").Find("Look").Find("Title").gameObject;
-        }
-        internal static GameObject Input
-        {
-            get => HumanCustom.Instance.StateMiniSelection.transform.Find("Window")
+        internal static Transform SectionTitle => Window.Content().Find("CameraSetting").Find("imgTitle");
+        internal static GameObject Label => Window.Content().Find("CameraSetting").Find("Content").Find("Look").Find("Title").gameObject;
+        internal static GameObject Input => HumanCustom.Instance.StateMiniSelection.transform.Find("Window")
                 .Find("StateWindow").Find("Pose")
                 .Find("PosePtn").Find("Layout").Find("ptnSelect").Find("InputField_Integer").gameObject;
-        }
-        internal static GameObject Color
-        {
-            get => HumanCustom.Instance.StateMiniSelection.transform.Find("Window")
-                .Find("StateWindow").Find("Light")
-                .Find("grpLighting").Find("colorLight").gameObject;
-        }
-        internal static GameObject Slider
-        {
-            get => Window.Content().Find("CameraSetting").Find("Content").Find("SensitivityX").Find("Slider").gameObject;
-        }
-        internal static Transform UIRoot {
-            get => Scene.ActiveScene.GetRootGameObjects()
-                .Where(item => "CustomScene".Equals(item.name))
-                .First().transform.Find("UI").Find("Root");
-        }
-        internal static GameObject Import
-        {
-            get => UIRoot.Find("Cvs_Category_FileList")
-                .GetChild(0).Find("CustomFileWindow").Find("BasePanel").Find("WinRect").Find("Load").Find("btnLoad").gameObject;
-        }
-        internal static GameObject Export
-        {
-            get => UIRoot.Find("Cvs_Category_FileList")
-                .GetChild(0).Find("CustomFileWindow").Find("BasePanel").Find("WinRect").Find("Save").Find("btnSave").gameObject;
-        }
-        internal static Toggle Casual
-        {
-            get => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("01_Plain").GetComponent<Toggle>();
-        }
-        internal static Toggle Job
-        {
-            get => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("02_Roomwear").GetComponent<Toggle>();
-        }
-        internal static Toggle Swim
-        {
-            get => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("03_Bathing").GetComponent<Toggle>();
-        }
+        internal static GameObject Color => HumanCustom.Instance.StateMiniSelection.transform
+            .Find("Window").Find("StateWindow").Find("Light").Find("grpLighting").Find("colorLight").gameObject;
+        internal static GameObject Slider => Window.Content().Find("CameraSetting").Find("Content").Find("SensitivityX").Find("Slider").gameObject;
+        internal static Transform UIRoot => HumanCustom.Instance.gameObject.transform.Find("UI").Find("Root");
+        internal static GameObject Import => HumanCustom.Instance.CustomCharaFile.FileWindow._btnLoad.gameObject;
+        internal static GameObject Export => HumanCustom.Instance.CustomCharaFile.FileWindow._btnSave.gameObject;
+        internal static Toggle Casual => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("01_Plain").GetComponent<Toggle>();
+        internal static Toggle Job => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("02_Roomwear").GetComponent<Toggle>();
+        internal static Toggle Swim => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("03_Bathing").GetComponent<Toggle>();
     }
     internal static class UIFactory
     {
@@ -506,8 +463,6 @@ namespace SardineHead
                 settings.GetComponentInChildren<RectMask2D>().enabled = true;
             });
             go.AddComponent<UI_DragWindow>();
-            go.AddComponent<ObservableDestroyTrigger>()
-                .AddDisposableOnDestroy(Disposable.Create(Dispose));
         }
         internal static void UpdateContent(this IEnumerable<MaterialHandle> handles) =>
             (handles.Count() > 0).Either(Hide, () => ContentRoot.With(Hide)
@@ -718,7 +673,7 @@ namespace SardineHead
         internal static void Hide() =>
             ContentRoot?.parent?.parent?.parent?.parent?.gameObject?.SetActive(false);
         internal static Action RefreshOperation = Hide;
-        internal static CancellationTokenSource RefreshCanceler = new();
+        internal static Il2CppSystem.Threading.CancellationTokenSource RefreshCanceler = new();
         internal static UniTask RefreshTask = UniTask.CompletedTask;
         internal static ConfigEntry<KeyboardShortcut> Toggle { get; set; }
         internal static ConfigEntry<bool> Status { get; set; }
@@ -730,125 +685,66 @@ namespace SardineHead
             {
                 RefreshTask = UniTask.NextFrame().ContinueWith((Action)Refresh);
             });
-        internal static HandlePaths Current { get => Human.list.TryGet(0, out Human human) ? new HandlePaths(human) : null; }
+        internal static HandlePaths Current => new HandlePaths(HumanCustom.Instance.Human);
+        internal static void UpdateContent(int category, int index) =>
+             (RefreshOperation = (category, index) switch
+             {
+                 (0, 1) => () => UpdateContent(Current.Eyebrows),
+                 (0, 3) => () => UpdateContent(Current.Eyelines),
+                 (0, 4) => () => UpdateContent(Current.Eyes),
+                 (0, 5) => () => UpdateContent(Current.Tooth),
+                 (0, _) => () => UpdateContent(Current.Face),
+                 (1, 8) => () => UpdateContent(Current.Nails),
+                 (1, _) => () => UpdateContent(Current.Body),
+                 (2, 0) => () => UpdateContent(Current.Hair(1)),
+                 (2, 1) => () => UpdateContent(Current.Hair(0)),
+                 (2, 2) => () => UpdateContent(Current.Hair(2)),
+                 (2, 3) => () => UpdateContent(Current.Hair(3)),
+                 (3, _) => () => UpdateContent(Current.Clothes(index)),
+                 (4, _) => () => UpdateContent(Current.Accessory(index)),
+                 _ => Hide
+             }).With(Current.Store).With(CancelRefresh).With(ScheduleRefresh);
         internal static Action<bool> ReserveCoordinate = (bool input) =>
-            input.Maybe(Current.With(() => UniTask.NextFrame().ContinueWith((Action)(() => Current.Apply()))).Store); 
+            input.Maybe(Current.With(() => UniTask.NextFrame().ContinueWith((Action)(() => Current.Apply()))).Store);
         internal static Action InputCheck = () =>
             Toggle.Value.IsDown().Maybe(() => (Status.Value = !Status.Value).With(ScheduleRefresh));
-        internal static void Listening()
+        internal static void Setup()
         {
             Canvas.preWillRenderCanvases += InputCheck;
             UIRef.Casual.onValueChanged.AddListener(ReserveCoordinate);
             UIRef.Job.onValueChanged.AddListener(ReserveCoordinate);
             UIRef.Swim.onValueChanged.AddListener(ReserveCoordinate);
+            ContentRoot = new GameObject(Plugin.Name).With(UIRef.UIRoot.Wrap).UI().With(ScheduleRefresh);
         }
-        internal static Action Initialize = () =>
-            ContentRoot = new GameObject(Plugin.Name).With(UIRef.UIRoot.Wrap).UI()
-                .With(Listening).With(Current.Store).With(CancelRefresh).With(ScheduleRefresh);
-        internal static Action Dispose = () =>
+        internal static void Dispose()
         {
             Canvas.preWillRenderCanvases -= InputCheck;
+            UIRef.Casual.onValueChanged.RemoveListener(ReserveCoordinate);
+            UIRef.Job.onValueChanged.RemoveListener(ReserveCoordinate);
+            UIRef.Swim.onValueChanged.RemoveListener(ReserveCoordinate);
             RefreshCanceler.Cancel();
             RefreshOperation = Hide;
-            TextureExtension.Dispose();
-            ModificationExtension.Dispose();
-        };
-       internal static void UpdateContent(int category, int index) =>
-            (RefreshOperation = (category, index) switch
-            {
-                (0, 1) => () => UpdateContent(Current.Eyebrows),
-                (0, 3) => () => UpdateContent(Current.Eyelines),
-                (0, 4) => () => UpdateContent(Current.Eyes),
-                (0, 5) => () => UpdateContent(Current.Tooth),
-                (0, _) => () => UpdateContent(Current.Face),
-                (1, 8) => () => UpdateContent(Current.Nails),
-                (1, _) => () => UpdateContent(Current.Body),
-                (2, 0) => () => UpdateContent(Current.Hair(1)),
-                (2, 1) => () => UpdateContent(Current.Hair(0)),
-                (2, 2) => () => UpdateContent(Current.Hair(2)),
-                (2, 3) => () => UpdateContent(Current.Hair(3)),
-                (3, _) => () => UpdateContent(Current.Clothes(index)),
-                (4, _) => () => UpdateContent(Current.Accessory(index)),
-                _ => Hide
-            }).With(CancelRefresh).With(ScheduleRefresh);
-    }
-    internal class HookImpl
-    {
-        internal Action<Human> ApplyModifications = delegate { };
-        internal Action<Human> InitializeModifications = delegate { };
-        internal Action<HumanData, LoadFlgs> LoadPrefix = delegate { };
-        internal Action<HumanData, LoadFlgs> LoadPostfix = delegate { };
-        internal Action<HumanData, SaveFlgs> SavePostfix = delegate { };
-        internal static HookImpl Application = new HookImpl() {
-            ApplyModifications = human => HandlePaths.Of(human).Apply(),
-            InitializeModifications = human => human.InitializeModifications()
-        };
-        internal static HookImpl CharacterCreation = new HookImpl() {
-            LoadPrefix = (data, flags) => flags = flags switch {
-                    LoadFlgs.Default => flags,
-                    LoadFlgs.FileView => flags,
-                    _ => flags.With(UIFactory.Current.Clear)
-                },
-            LoadPostfix = (data, flags) => flags = flags switch {
-                    LoadFlgs.Default => flags,
-                    LoadFlgs.FileView => flags,
-                    _ => flags.With(data.CharaFileName.Apply(UIFactory.Current.Deserialize))
-                },
-            SavePostfix = (data, flags) =>
-                UIFactory.Current.With(UIFactory.Current.Store).Serialize(data.CharaFileName)
-        };
-        internal static HookImpl Default = new HookImpl();
+        }
+        internal static void Initialize() => Util.Hook<HumanCustom>(Setup, Dispose);
     }
     internal static class Hooks
     {
-        internal static HookImpl Impl;
         [HarmonyPostfix]
         [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.CreateClothesTexture))]
-        internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance) => Impl.ApplyModifications(__instance.human);
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(Human), nameof(Human.SetCreateTexture))]
-        internal static void HumanSetCreateTexturePostfix(Human __instance) => Impl.InitializeModifications(__instance);
-        [HarmonyPrefix]
-        [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanData), nameof(HumanData.LoadFile), typeof(Il2CppSystem.IO.BinaryReader), typeof(LoadFlgs))]
-        internal static void HumanDataLoadFilePrefix(HumanData __instance, LoadFlgs flags) => Impl.LoadPrefix(__instance, flags);
-        [HarmonyPostfix]
-        [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanData), nameof(HumanData.LoadFile), typeof(Il2CppSystem.IO.BinaryReader), typeof(LoadFlgs))]
-        internal static void HumanDataLoadFilePostfix(HumanData __instance, LoadFlgs flags) => Impl.LoadPostfix(__instance, flags);
-        [HarmonyPostfix]
-        [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanData), nameof(HumanData.SaveFile), typeof(Il2CppSystem.IO.Stream), typeof(SaveFlgs))]
-        internal static void HumanDataSaveFilePostfix(HumanData __instance, SaveFlgs flags) => Impl.SavePostfix(__instance, flags);
-        [HarmonyPrefix]
-        [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(CustomCharaFile), nameof(CustomCharaFile.DeleteCharaFile))]
-        internal static void CustomCharaFileDeleteCharaFilePrefix(CustomCharaFile __instance) =>
-            ModificationExtension.Delete(__instance.ListCtrl.GetSelectTopInfo().FileName);
+        internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance) =>
+            Scene.NowData.LevelName.Equals(SceneNames.Simulation).Maybe(new HandlePaths(__instance.human).Apply);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(CategorySelection), nameof(CategorySelection.OpenView), typeof(int))]
-        internal static void CategorySelectionSetPostfix(CategorySelection __instance, int index) =>
-            UIFactory.UpdateContent(__instance._no, index);
+        internal static void CategorySelectionSetPostfix(CategorySelection __instance, int index) => UIFactory.UpdateContent(__instance._no, index);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(ThumbnailButton), nameof(ThumbnailButton.Set))]
+        [HarmonyPatch(typeof(ThumbnailButton), nameof(ThumbnailButton.Open))]
+        [HarmonyPatch(typeof(ThumbnailButton), nameof(ThumbnailButton.OpenThumbnail), typeof(bool), typeof(CustomThumbnailSelectWindow.WindowEvent))]
         internal static void ThumbnailButtonOpenPostfix() => UIFactory.ScheduleRefresh();
-        [HarmonyPostfix]
-        [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(Scene), nameof(Scene.LoadStart), typeof(Scene.Data), typeof(bool))]
-        internal static void SceneLoadStartPostfix(Scene.Data data, ref UniTask __result) =>
-            __result = data.LevelName switch
-            {
-                "CustomScene" => __result.ContinueWith(UIFactory.Initialize)
-                    .With(() => Impl = HookImpl.CharacterCreation),
-                "Simulation" => __result
-                    .With(() => Impl = HookImpl.Application),
-                _ => __result
-                    .With(() => Impl = HookImpl.Default),
-            };
     }
     [BepInProcess(Process)]
+    [BepInDependency(Fishbone.Plugin.Guid)]
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BasePlugin
     {
@@ -856,11 +752,39 @@ namespace SardineHead
         public const string Process = "SamabakeScramble";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "0.3.0";
+        public const string Version = "0.5.0";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
-                .With(ConfigToggle).With(ConfigStatus).With(() => Instance = this);
+                .With(() => Instance = this)
+                .With(UIFactory.Initialize)
+                .With(ModificationExtension.Initialize<HumanCustom>)
+                .With(ModificationExtension.Initialize<SV.SimulationScene>)
+                .With(TextureExtension.Initialize<HumanCustom>)
+                .With(TextureExtension.Initialize<SV.SimulationScene>)
+                .With(ListenOnCharacterCreationSerialize)
+                .With(ListenOnCharacterCreationDeserialize)
+                .With(ListenOnCoordinateSerialize)
+                .With(ListenOnCoordinateInitialize)
+                .With(ListenOnCoordinateDeserialize)
+                .With(ListenOnActorSerialize)
+                .With(ListenOnActorDeserialize)
+                .With(ConfigToggle)
+                .With(ConfigStatus);
+        private void ListenOnCharacterCreationSerialize() =>
+            Event.OnCharacterCreationSerialize += (archive) => HumanCustom.Instance.Human.Serialize(archive);
+        private void ListenOnCharacterCreationDeserialize() =>
+            Event.OnCharacterCreationDeserialize += (limit, archive) => HumanCustom.Instance.Human.Deserialize(limit, archive);
+        private void ListenOnCoordinateSerialize() =>
+            Event.OnCoordinateSerialize += (archive) => { };
+        private void ListenOnCoordinateInitialize() =>
+            Event.OnCoordinateInitialize += (human, archive) => { };
+        private void ListenOnCoordinateDeserialize() =>
+            Event.OnCoordinateDeserialize += (human, limits, archive) => { };
+        private void ListenOnActorSerialize() =>
+            Event.OnActorSerialize += (actor, archive) => actor.Serialize(archive);
+        private void ListenOnActorDeserialize() =>
+            Event.OnActorDeserialize += (actor, human, archive) => actor.Deserialize(human, archive);
         private void ConfigToggle() => UIFactory.Toggle = Config
             .Bind("General", "Sardin Head toggle key", new KeyboardShortcut(KeyCode.S, KeyCode.LeftControl));
         private void ConfigStatus() => UIFactory.Status = Config

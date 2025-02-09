@@ -3,7 +3,7 @@
         <TargetFramework>net6</TargetFramework>
         <AssemblyName>SardineHead</AssemblyName>
         <Description>runtime texture and material modifier tool for SamabakeScramble Character Creation</Description>
-        <Version>0.1.0</Version>
+        <Version>0.5.0</Version>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <GamePath>$([MSBuild]::GetRegistryValue('HKEY_CURRENT_USER\Software\ILLGAMES\SamabakeScramble','INSTALLDIR'))</GamePath>
@@ -75,6 +75,10 @@
 		</Reference>
 		<Reference Include="BepinEx.KeyboardShortcut">
 			<HintPath>$(GamePath)\BepInEx\plugins\ConfigurationManager\BepinEx.KeyboardShortcut.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Fishbone">
+			<HintPath>$(GamePath)\BepInEx\plugins\Fishbone.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
