@@ -4,7 +4,9 @@ Runtime texture and material modifier tool for SamabakeScramble character creati
 
 Currently, this is preview and sample for modders.
 
-Now sardine head persist (smells fishy).
+~Now sardine head persist (smells fishy).~
+
+Once you save the game, modifications will be lost again, and now struggling to solve this.
 
 Extension data will be incompatible in future release.
 
