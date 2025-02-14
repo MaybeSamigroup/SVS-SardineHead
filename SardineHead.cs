@@ -15,14 +15,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering;
 using TMPro;
-using Manager;
 using Character;
 using CharacterCreation;
 using Mods = System.Collections.Generic.Dictionary<string, SardineHead.Modifications>;
 using CharaLimit = Character.HumanData.LoadLimited.Flags;
 using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Fishbone;
-using UniRx.Triggers;
 
 namespace SardineHead
 {
@@ -72,7 +70,7 @@ namespace SardineHead
         public Dictionary<int, Mods> Clothes { get; set; } =
             Enumerable.Range(0, 8).ToDictionary<int, int, Mods>(idx => idx, idx => new());
         public Dictionary<int, Mods> Accessory { get; set; } =
-            Enumerable.Range(0, 20).ToDictionary<int, int, Mods>(idx => idx, idx => new());
+            Enumerable.Range(0, ChaFileDefine.AccessorySlotNum).ToDictionary<int, int, Mods>(idx => idx, idx => new());
     }
     internal class MaterialHandle
     {
@@ -84,11 +82,11 @@ namespace SardineHead
         internal Action<int, Color> SetColor;
         internal Action<int, Vector4> SetVector;
         internal Action<int, Texture> SetTexture;
-        internal Dictionary<string, Action<int>> SetInts = new ();
-        internal Dictionary<string, Action<float>> SetFloats = new ();
-        internal Dictionary<string, Action<Color>> SetColors = new ();
-        internal Dictionary<string, Action<Vector4>> SetVectors = new ();
-        internal Dictionary<string, Action<Texture>> SetTextures = new ();
+        internal Dictionary<string, Action<int>> SetInts = new();
+        internal Dictionary<string, Action<float>> SetFloats = new();
+        internal Dictionary<string, Action<Color>> SetColors = new();
+        internal Dictionary<string, Action<Vector4>> SetVectors = new();
+        internal Dictionary<string, Action<Texture>> SetTextures = new();
         internal Dictionary<string, Action<GameObject>> Handles { get; init; } = new();
         internal MaterialHandle(Material material, string label, Mods mods) =>
             ((Value, Label, Mods) = (material, label, mods)).With(() => Mods.TryAdd(Label, new())).With(PrepareSetters).With(PopulateHandles);
@@ -102,12 +100,17 @@ namespace SardineHead
                     Value.shader.GetPropertyNameId(idx),
                     Value.shader.GetPropertyType(idx),
                     () => Value.shader.GetPropertyRangeLimits(idx)));
-        private Action<bool> IntToggle(int id, string name) => Toggle(name, SetInts, () => Value.GetInt(id), value => Mods[Label].IntValues[name] = value);
-        private Action<bool> FloatToggle(int id, string name) => Toggle(name, SetFloats, () => Value.GetFloat(id), value => Mods[Label].FloatValues[name] = value);
-        private Action<bool> ColorToggle(int id, string name) => Toggle(name, SetColors, () => Value.GetColor(id), value => Mods[Label].ColorValues[name] = value);
-        private Action<bool> VectorToggle(int id, string name) => Toggle(name, SetVectors, () => Value.GetVector(id), value => Mods[Label].VectorValues[name] = value);
-        private Action<bool> TextureToggle(int id, string name) => Toggle(name, SetTextures, () => Value.GetTexture(id), value =>
-            value.IsExtension().Either(() => Mods[Label].TextureHashes.Remove(name), () => Mods[Label].TextureHashes[name] = value.name));
+        private Action<bool> IntToggle(int id, string name) =>
+            Toggle(name, SetInts, () => Value.GetInt(id), value => Mods[Label].IntValues[name] = value);
+        private Action<bool> FloatToggle(int id, string name) =>
+            Toggle(name, SetFloats, () => Value.GetFloat(id), value => Mods[Label].FloatValues[name] = value);
+        private Action<bool> ColorToggle(int id, string name) =>
+            Toggle(name, SetColors, () => Value.GetColor(id), value => Mods[Label].ColorValues[name] = value);
+        private Action<bool> VectorToggle(int id, string name) =>
+            Toggle(name, SetVectors, () => Value.GetVector(id), value => Mods[Label].VectorValues[name] = value);
+        private Action<bool> TextureToggle(int id, string name) =>
+            Toggle(name, SetTextures, () => Value.GetTexture(id), value => value.IsExtension()
+                .Either(() => Mods[Label].TextureHashes.Remove(name), () => Mods[Label].TextureHashes[name] = value.name));
         private Action<bool> Toggle<T>(string name, Dictionary<string, Action<T>> actions, Func<T> get, Action<T> set) =>
             value => value.Either(() => actions[name] -= set, () => actions[name] += set.With(() => set(get())));
         private bool PopulateHandles(string name, int id, ShaderPropertyType shaderType, Func<Vector2> limits) =>
@@ -151,26 +154,21 @@ namespace SardineHead
                 _ => false
             };
         internal void Apply() => Mods[Label].With(ApplyInt).With(ApplyFloat).With(ApplyColor).With(ApplyVector).With(ApplyTexture);
-        private void ApplyInt(Modifications mods) => mods.IntValues.Do(entry => SetInts[entry.Key](entry.Value));
-        private void ApplyFloat(Modifications mods) => mods.FloatValues.Do(entry => SetFloats[entry.Key](entry.Value));
-        private void ApplyColor(Modifications mods) => mods.ColorValues.Do(entry => SetColors[entry.Key](entry.Value));
-        private void ApplyVector(Modifications mods) => mods.VectorValues.Do(entry => SetVectors[entry.Key](entry.Value));
-        private void ApplyTexture(Modifications mods) => mods.TextureHashes.Do(entry => SetTextures[entry.Key](entry.Value.ToTexture()));
-        internal static Func<Renderer, IEnumerable<MaterialHandle>> Of(Mods mods) =>
-            renderer => renderer != null ? [new MaterialHandle(renderer.material, renderer.name ?? renderer.gameObject.name, mods)] : [];
-        internal static IEnumerable<MaterialHandle> Of(Mods mods, ChaClothesComponent cmpClothes) =>
-            new List<Renderer> { cmpClothes?.rendAccessory, cmpClothes?.rendEmblem01, cmpClothes?.rendEmblem02 }
-                .Concat(cmpClothes?.rendNormal01?.ToArray() ?? [])
-                .Concat(cmpClothes?.rendNormal02?.ToArray() ?? [])
-                .Concat(cmpClothes?.rendNormal03?.ToArray() ?? [])
-                .Concat(cmpClothes?.exRendEmblem01?.ToArray() ?? [])
-                .Concat(cmpClothes?.exRendEmblem02?.ToArray() ?? [])
-                .Where(item => item != null).DistinctBy(item => item.Pointer).SelectMany(Of(mods));
+        private void ApplyInt(Modifications mods) => mods.IntValues
+            .Where(entry => SetInts.ContainsKey(entry.Key)).Do(entry => SetInts[entry.Key](entry.Value));
+        private void ApplyFloat(Modifications mods) => mods.FloatValues
+            .Where(entry => SetFloats.ContainsKey(entry.Key)).Do(entry => SetFloats[entry.Key](entry.Value));
+        private void ApplyColor(Modifications mods) => mods.ColorValues
+            .Where(entry => SetColors.ContainsKey(entry.Key)).Do(entry => SetColors[entry.Key](entry.Value));
+        private void ApplyVector(Modifications mods) => mods.VectorValues
+            .Where(entry => SetVectors.ContainsKey(entry.Key)).Do(entry => SetVectors[entry.Key](entry.Value));
+        private void ApplyTexture(Modifications mods) => mods.TextureHashes
+            .Where(entry => SetTextures.ContainsKey(entry.Key)).Do(entry => SetTextures[entry.Key](entry.Value.ToTexture()));
     }
     internal class ControlMaterial : MaterialHandle
     {
         internal CustomTextureControl Ctc { get; init; }
-        private ControlMaterial(CustomTextureControl ctc, string name, Mods mods) :
+        internal ControlMaterial(CustomTextureControl ctc, string name, Mods mods) :
             base(ctc._matCreate, name, mods) =>
                 Ctc = ctc.With(OpInt).With(OpFloat).With(OpColor).With(OpVector).With(OpTexture);
         private void OpInt() => SetInt += (_, _) => Ctc.SetNewCreateTexture();
@@ -178,16 +176,12 @@ namespace SardineHead
         private void OpColor() => SetColor += (_, _) => Ctc.SetNewCreateTexture();
         private void OpVector() => SetVector += (_, _) => Ctc.SetNewCreateTexture();
         private void OpTexture() => SetTexture += (_, _) => Ctc.SetNewCreateTexture();
-        internal static IEnumerable<MaterialHandle> Of(Mods mods, HumanBody body) =>
-            body?.customTexCtrlBody == null ? [] : [new ControlMaterial(body.customTexCtrlBody, body.objBody.name, mods)];
-        internal static IEnumerable<MaterialHandle> Of(Mods mods, HumanFace face) =>
-            face?.customTexCtrlFace == null ? [] : [new ControlMaterial(face.customTexCtrlFace, face.objHead.name, mods)];
     }
     internal class CreateMaterial : MaterialHandle
     {
         internal CustomTextureCreate Ctc { get; init; }
         internal Func<CustomTextureCreate, int, bool> Rebuild { get; init; }
-        private CreateMaterial(CustomTextureCreate ctc, Func<CustomTextureCreate, int, bool> rebuild, string name, Mods mods) :
+        internal CreateMaterial(CustomTextureCreate ctc, Func<CustomTextureCreate, int, bool> rebuild, string name, Mods mods) :
             base(ctc._matCreate, name, mods) =>
                 (Ctc, Rebuild) = (ctc, rebuild).With(OpInt).With(OpFloat).With(OpColor).With(OpVector).With(OpTexture);
         private void OpInt() => SetInt += (id, _) => Rebuild(Ctc, id);
@@ -195,46 +189,87 @@ namespace SardineHead
         private void OpColor() => SetColor += (id, _) => Rebuild(Ctc, id);
         private void OpVector() => SetVector += (id, _) => Rebuild(Ctc, id);
         private void OpTexture() => SetTexture += (id, _) => Rebuild(Ctc, id);
+    }
+    internal static class MaterialHandleExtension
+    {
+        internal static IEnumerable<MaterialHandle> ToCtcHandles(this HumanFace face, CharacterModifications mods) =>
+            face?.customTexCtrlFace == null ? [] : [new ControlMaterial(face.customTexCtrlFace, face.objHead.name, mods.Face)];
+        internal static IEnumerable<MaterialHandle> ToCtcHandles(this HumanBody body, CharacterModifications mods) =>
+            body?.customTexCtrlBody == null ? [] : [new ControlMaterial(body.customTexCtrlBody, body.objBody.name, mods.Body)];
+        internal static IEnumerable<Renderer> Normalize(IEnumerable<Renderer> renderers) => renderers == null ? [] : renderers;
+        internal static IEnumerable<MaterialHandle> ToHandles(this Mods mods, params Renderer[] renderers) =>
+            (renderers ?? []).Where(renderer => renderer != null).Distinct()
+                .Select(renderer => new MaterialHandle(renderer.material, renderer.name ?? renderer.gameObject.name, mods));
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanFace face, CharacterModifications mods) =>
+            [..face.ToFaceHandles(mods), .. face.ToEyebrowsHandles(mods),
+             ..face.ToEyelinesHandles(mods), ..face.ToEyesHandles(mods), ..face.ToToothHandles(mods)];
+        internal static IEnumerable<MaterialHandle> ToFaceHandles(this HumanFace face, CharacterModifications mods) =>
+            mods.Face.ToHandles(face?.rendFace);
+        internal static IEnumerable<MaterialHandle> ToEyebrowsHandles(this HumanFace face, CharacterModifications mods) =>
+            mods.Eyebrows.ToHandles(face?.rendEyebrow);
+        internal static IEnumerable<MaterialHandle> ToEyelinesHandles(this HumanFace face, CharacterModifications mods) =>
+            mods.Eyelines.ToHandles(face?.rendEyelid, face?.rendEyeline);
+        internal static IEnumerable<MaterialHandle> ToEyesHandles(this HumanFace face, CharacterModifications mods) =>
+            mods.Eyes.ToHandles(face?.rendEye);
+        internal static IEnumerable<MaterialHandle> ToToothHandles(this HumanFace face, CharacterModifications mods) =>
+            mods.Tooth.ToHandles(face?.rendTooth, face?.rendDoubleTooth, face?.rendTongueFace);
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanBody body, CharacterModifications mods) =>
+            [.. body.ToBodyHandles(mods), .. body.ToNailsHandles(mods)];
+        internal static IEnumerable<MaterialHandle> ToBodyHandles(this HumanBody body, CharacterModifications mods) =>
+            mods.Body.ToHandles(body?.rendBody);
+        internal static IEnumerable<MaterialHandle> ToNailsHandles(this HumanBody body, CharacterModifications mods) =>
+            mods.Nails.ToHandles([
+                .. Normalize(body?.hand?.nailObject?.obj?.GetComponentsInChildren<Renderer>()),
+                .. Normalize(body?.leg?.nailObject?.obj?.GetComponentsInChildren<Renderer>())]);
+        private static Dictionary<int, Tuple<int, int>> LastHairIds = new();
+        private static Dictionary<int, Tuple<int, int>> LastClothesIds = new();
+        private static Dictionary<int, Tuple<int, int>> LastAccessoryIds = new();
+        private static Action<Mods> Identify(ListInfoBase info, Dictionary<int, Tuple<int, int>> lasts, int index) =>
+            info == null ? mods => mods.With(() => lasts.Remove(index)).Clear()
+                : !lasts.ContainsKey(index) ? mods => mods.With(() => lasts[index] = new(info.Category, info.Id))
+                : (info.Category, info.Id) != (lasts[index].Item1, lasts[index].Item2)
+                    ? mods => mods.With(() => lasts[index] = new(info.Category, info.Id)).Clear() : _ => { };
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanHair hair, CoordinateModifications mods, int index) =>
+            hair.hairs[index]?.ToHandles(mods.Hair[index].With(Identify(hair.hairs[index]?.infoHair, LastHairIds, index))) ?? [];
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanHair.Hair hair, Mods mods) => mods.ToHandles(hair.renderers);
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanCloth cloth, CoordinateModifications mods, int index) =>
+            cloth.clothess[index]?.ToHandles(mods.Clothes[index].With(Identify(cloth.clothess[index]?.infoClothes, LastClothesIds, index))) ?? [];
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanCloth.Clothes clothes, Mods mods) =>
+            [.. clothes.ToCtcHandles(mods), .. clothes.cusClothesCmp?.ToHandles(mods)];
+        internal static IEnumerable<MaterialHandle> ToHandles(this ChaClothesComponent cmpClothes, Mods mods) => mods.ToHandles(
+            [ cmpClothes?.rendAccessory, cmpClothes?.rendEmblem01, cmpClothes?.rendEmblem02
+            , ..Normalize(cmpClothes?.exRendEmblem01), ..Normalize(cmpClothes?.exRendEmblem02)
+            , ..Normalize(cmpClothes?.rendNormal01), ..Normalize(cmpClothes?.rendNormal02), ..Normalize(cmpClothes?.rendNormal03)]);
         private static Func<CustomTextureCreate, int, bool>[] Rebuilds(ChaClothesComponent cmp) =>
             cmp == null ? [] : [cmp.Rebuild01, cmp.Rebuild02, cmp.Rebuild03, cmp.RebuildAccessory, cmp.RebuildAccessory];
-        internal static IEnumerable<MaterialHandle> Of(Mods mods, HumanCloth.Clothes clothes) =>
+        internal static IEnumerable<MaterialHandle> ToCtcHandles(this HumanCloth.Clothes clothes, Mods mods) =>
             Rebuilds(clothes.cusClothesCmp)
                 .Where((_, idx) => idx < clothes.ctCreateClothes.Count && null != clothes.ctCreateClothes[idx])
                 .Select((update, idx) => new CreateMaterial(clothes.ctCreateClothes[idx], update, $"{clothes.cusClothesCmp.name}{idx}", mods));
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanAccessory acs, CoordinateModifications mods, int index) =>
+            acs.accessories[index]?.ToHandles(mods.Accessory[index].With(Identify(acs.accessories[index]?.infoAccessory, LastAccessoryIds, index))) ?? [];
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanAccessory.Accessory acs, Mods mods) => mods.ToHandles(acs.renderers);
     }
-    internal static class TextureExtension
+    internal class HandlePaths
+    {
+        internal HandlePaths(Human target) => (Target, Mods) = (target, target.Modifications());
+        internal Human Target { get; init; }
+        internal CharacterModifications Mods { get; init; }
+        internal CoordinateModifications Coordinate => Mods.Coordinates[Target.data.Status.coordinateType];
+        internal IEnumerable<MaterialHandle> Face => Target.face.ToCtcHandles(Mods).Concat(Target.face.ToFaceHandles(Mods));
+        internal IEnumerable<MaterialHandle> Eyebrows => Target.face.ToEyebrowsHandles(Mods);
+        internal IEnumerable<MaterialHandle> Eyelines => Target.face.ToEyelinesHandles(Mods);
+        internal IEnumerable<MaterialHandle> Eyes => Target.face.ToEyesHandles(Mods);
+        internal IEnumerable<MaterialHandle> Tooth => Target.face.ToToothHandles(Mods);
+        internal IEnumerable<MaterialHandle> Body => Target.body.ToCtcHandles(Mods).Concat(Target.body.ToBodyHandles(Mods));
+        internal IEnumerable<MaterialHandle> Nails => Target.body.ToNailsHandles(Mods);
+        internal IEnumerable<MaterialHandle> Hair(int index) => Target.hair.ToHandles(Coordinate, index);
+        internal IEnumerable<MaterialHandle> Clothes(int index) => Target.cloth.ToHandles(Coordinate, index);
+        internal IEnumerable<MaterialHandle> Accessory(int index) => Target.acs.ToHandles(Coordinate, index);
+    }
+    internal static partial class TextureExtension
     {
         private static readonly string TexturePath = Path.Combine(Plugin.Guid, "textures");
-        private static Dictionary<string, byte[]> Binaries = new();
-        private static string Hash(this byte[] input)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                return Convert.ToHexString(sha256.ComputeHash(input)).With(hash => Binaries.TryAdd(hash, input));
-            }
-        }
-        internal static bool IsExtension(this Texture value) => Binaries.ContainsKey(value.name);
-        internal static RenderTexture ToTexture(this string value) => Binaries[value].Import();
-        internal static RenderTexture Import(this string path) => File.ReadAllBytes(path).Import();
-        private static RenderTexture Import(this byte[] input) =>
-            new Texture2D(256, 256)
-                .With(t2d => ImageConversion.LoadImage(t2d, input))
-                .Import().With(texture => texture.name = Hash(input));
-        private static RenderTexture Import(this Texture2D input) =>
-            new RenderTexture(input.width, input.height, 0)
-                .With(tex => Graphics.Blit(input, tex));
-        internal static void Export(this string path, Texture tex) =>
-            File.WriteAllBytes(path, new Texture2D(tex.width, tex.height)
-                .With(t2d => t2d.Export(tex, RenderTexture.GetTemporary(tex.width, tex.height)))
-                .EncodeToPNG().ToArray());
-        private static void Export(this Texture2D t2d, Texture tex, RenderTexture tmp) =>
-            RenderTexture.active = RenderTexture.active.With(() =>
-            {
-                RenderTexture.active = tmp;
-                GL.Clear(false, true, new Color());
-                Graphics.Blit(tex, tmp);
-                t2d.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
-            }).With(() => RenderTexture.ReleaseTemporary(tmp));
         private static void Serialize(this string hash, Stream stream) =>
             new BinaryWriter(stream).Write(Binaries[hash]);
         private static Action<Stream> Deserialize(this string hash, int size) =>
@@ -246,106 +281,45 @@ namespace SardineHead
                 .Where(entry => entry.FullName.StartsWith(TexturePath))
                 .Where(entry => !Binaries.ContainsKey(entry.Name))
                 .Do(entry => entry.Open().With(entry.Name.Deserialize((int)entry.Length)).Close());
-        private static IEnumerable<string> TexturesNotInUse(this IEnumerable<string> hashes) => 
+        private static IEnumerable<string> TexturesNotInUse(this IEnumerable<string> hashes) =>
             Binaries.Keys.Where(hash => !hashes.Contains(hash));
         private static void Cleanup() =>
             ModificationExtension.TexturesInUse.TexturesNotInUse().Do(hash => Binaries.Remove(hash));
-        internal static void Initialize() {
+        internal static void Initialize()
+        {
             Util.Hook<HumanCustom>(Cleanup, Cleanup);
-            Util.Hook<SV.SimulationScene>(() => {}, Binaries.Clear);
+            Util.Hook<SV.SimulationScene>(() => { }, Binaries.Clear);
         }
-    }
-    internal class HandlePaths
-    {
-        internal HandlePaths(Human target) => (Target, Mods) = (target, target.Modifications());
-        internal Human Target { get; init; }
-        internal CharacterModifications Mods { get; init; }
-        internal CoordinateModifications Coordinate => Mods.Coordinates[Target.data.Status.coordinateType];
-        internal IEnumerable<MaterialHandle> Face =>
-            ControlMaterial.Of(Mods.Face, Target?.face)
-                .Concat(MaterialHandle.Of(Mods.Face)(Target?.face?.rendFace));
-        internal IEnumerable<MaterialHandle> Eyebrows =>
-            MaterialHandle.Of(Mods.Eyebrows)(Target?.face?.rendEyebrow);
-        internal IEnumerable<MaterialHandle> Eyelines =>
-            new List<Renderer>() {
-                Target?.face?.rendEyelid,
-                Target?.face?.rendEyeline,
-            }.SelectMany(MaterialHandle.Of(Mods.Eyelines));
-        internal IEnumerable<MaterialHandle> Eyes =>
-            Target?.face?.rendEye?.SelectMany(MaterialHandle.Of(Mods.Eyes));
-        internal IEnumerable<MaterialHandle> Tooth =>
-            new List<Renderer>() {
-                Target?.face?.rendTooth,
-                Target?.face?.rendDoubleTooth,
-                Target?.face?.rendTongueFace
-            }.SelectMany(MaterialHandle.Of(Mods.Tooth));
-        internal IEnumerable<MaterialHandle> Body => ControlMaterial
-            .Of(Mods.Body, Target?.body).Concat(MaterialHandle.Of(Mods.Body)(Target?.body?.rendBody));
-        internal IEnumerable<MaterialHandle> Nails =>
-            new List<GameObject>() {
-                Target?.body?.hand?.nailObject?.obj,
-                Target?.body?.leg?.nailObject?.obj
-            }.SelectMany(go => go.GetComponentsInChildren<Renderer>()).SelectMany(MaterialHandle.Of(Mods.Nails));
-        internal IEnumerable<MaterialHandle> Hair(int index) =>
-            Target?.hair?.hairs?[index]?.renderers?.SelectMany(MaterialHandle.Of(Coordinate.Hair[index])) ?? [];
-        internal IEnumerable<MaterialHandle> Clothes(int index) =>
-            CreateMaterial.Of(Coordinate.Clothes[index], Target?.cloth?.clothess?[index])
-                .Concat(MaterialHandle.Of(Coordinate.Clothes[index], Target?.cloth?.clothess?[index]?.cusClothesCmp)) ?? [];
-        internal IEnumerable<MaterialHandle> Accessory(int index) =>
-            Target?.acs?.accessories?[index]?.renderers?.SelectMany(MaterialHandle.Of(Coordinate.Accessory[index])) ?? [];
-        internal void Apply() =>
-            Face.Concat(Eyebrows).Concat(Eyelines).Concat(Eyes).Concat(Tooth).Concat(Body).Concat(Nails)
-                .Concat(Enumerable.Range(0, 4).SelectMany(Hair))
-                .Concat(Enumerable.Range(0, 8).SelectMany(Clothes))
-                .Concat(Enumerable.Range(0, 20).SelectMany(Accessory))
-                .Do(handle => handle.Apply());
-        internal Tuple<Mods, IEnumerable<MaterialHandle>>[] Pairs =>
-        [
-            new(Mods.Face, Face),
-            new(Mods.Eyebrows, Eyebrows),
-            new(Mods.Eyelines, Eyelines),
-            new(Mods.Eyes, Eyes),
-            new(Mods.Tooth, Tooth),
-            new(Mods.Body, Body),
-            new(Mods.Nails, Nails),
-            .. Enumerable.Range(0, 4).Select(idx => new Tuple<Mods, IEnumerable<MaterialHandle>>(Coordinate.Hair[idx], Hair(idx))),
-            .. Enumerable.Range(0, 8).Select(idx => new Tuple<Mods, IEnumerable<MaterialHandle>>(Coordinate.Clothes[idx], Clothes(idx))),
-            .. Enumerable.Range(0, 20).Select(idx => new Tuple<Mods, IEnumerable<MaterialHandle>>(Coordinate.Accessory[idx], Accessory(idx)))
-        ];
-        internal void Clean() => Pairs.Do(entry => Clean(entry.Item1, entry.Item2));
-        private void Clean(Mods mods, IEnumerable<MaterialHandle> handle) => Clean(mods, handle.Select(handle => handle.Label));
-        private void Clean(Mods mods, IEnumerable<string> labels) => mods.Keys.Where(key => !labels.Contains(key)).ToList().Do(key => mods.Remove(key));
     }
     internal static partial class ModificationExtension
     {
         private static readonly string ModificationPath = Path.Combine(Plugin.Guid, "modifications.json");
         private static CharacterModifications CustomSceneMods = new();
-        private readonly static Dictionary<int, CharacterModifications> Actors = new ();
+        private readonly static Dictionary<int, CharacterModifications> Actors = new();
         internal static IEnumerable<string> TexturesInUse =>
             Actors.Values.SelectMany(mods => mods.Aggregate()).SelectMany(mod => mod.TextureHashes.Values).Distinct();
         internal static CharacterModifications Modifications(this Human human) =>
-            Actors.Count == 0 ? CustomSceneMods : human.GetActorIndex().Modifications();
+            Manager.Scene.NowData.LevelName.Equals(SceneNames.CustomScene)
+                ? CustomSceneMods : human.GetActorIndex().Modifications();
+        internal static CoordinateModifications Coordinate(this Human human) =>
+            human.Modifications().Coordinates[human.data.Status.coordinateType];
         internal static void Serialize(this ZipArchive archive) =>
-            UIFactory.Current.With(UIFactory.Current.Clean).Mods.Serialize(archive);
+            UIFactory.Current.Mods.Serialize(archive);
         internal static void SerializeCoordinate(this ZipArchive archive) =>
-            UIFactory.Current.With(UIFactory.Current.Clean).Coordinate.Serialize(archive);
+            UIFactory.Current.Coordinate.Serialize(archive);
         internal static void Serialize(this ZipArchive archive, int index) =>
             Actors.ContainsKey(index).Maybe(() => Actors[index].Serialize(archive));
         internal static void Deserialize(this ZipArchive archive, CharaLimit limits) =>
             (HumanCustom.Instance?.Human != null).Either(
                 () => UniTask.NextFrame().ContinueWith((Action)(() => archive.Deserialize(limits))),
                 () => archive.With(TextureExtension.Deserialize)
-                    .With(Deserialize(HumanCustom.Instance.Human, limits))
-                    .With(() => UniTask.NextFrame().ContinueWith((Action)UIFactory.Current.Apply)));
-        internal static void Deserialize(this ZipArchive archive, Human human) =>
-            archive.With(TextureExtension.Deserialize).GetEntry(ModificationPath)?.Open()?.With(human.Deserialize)?.Close();
+                        .With(HumanCustom.Instance.Human.Deserialize(limits)));
         internal static void DeserializeCoordinate(this ZipArchive archive, Human human, CoordLimit limits) =>
-            archive.With(TextureExtension.Deserialize).With(Deserialize(human, limits))
-                .With(() => UniTask.NextFrame().ContinueWith((Action)new HandlePaths(human).Apply));
+            archive.With(TextureExtension.Deserialize).With(Deserialize(human, limits));
         internal static void Deserialize(this ZipArchive archive, int index) =>
-            archive.With(TextureExtension.Deserialize).GetEntry(ModificationPath)?.Open()?.With(Deserialize(index))?.Close();
+            archive.With(TextureExtension.Deserialize).With(Deserialize(index));
         private static CharacterModifications Modifications(this int index) =>
-            Actors.ContainsKey(index) ? Actors[index] : new CharacterModifications();
+            CustomSceneMods = Actors.ContainsKey(index) ? Actors[index] : new CharacterModifications();
         private static IEnumerable<Modifications> Aggregate(this CharacterModifications mods) =>
             mods.Coordinates.Values.SelectMany(Aggregate)
                 .Concat(mods.Face.Values)
@@ -366,14 +340,26 @@ namespace SardineHead
             mods.Aggregate().SelectMany(mod => mod.TextureHashes.Values)
                 .Distinct().Do(TextureExtension.Serialize(archive));
         private static void Serialize(this CoordinateModifications mods, ZipArchive archive) =>
-            new StreamWriter(archive.With(mods.SerializeTextures).CreateEntry(ModificationPath).Open());
+            new StreamWriter(archive.With(mods.SerializeTextures).CreateEntry(ModificationPath).Open())
+                .With(stream => stream.Write(JsonSerializer.Serialize(mods))).Close();
         private static void Serialize(this CharacterModifications mods, ZipArchive archive) =>
             new StreamWriter(archive.With(mods.SerializeTextures).CreateEntry(ModificationPath).Open())
                 .With(stream => stream.Write(JsonSerializer.Serialize(mods))).Close();
         private static Action<ZipArchive> Deserialize(this Human human, CharaLimit limits) =>
-            archive => archive.GetEntry(ModificationPath)?.Open()?.With(human.Merge(limits))?.Close();
-        private static Action<Stream> Merge(this Human human, CharaLimit limits) =>
-            stream => limits.Merge(JsonSerializer.Deserialize<CharacterModifications>(stream), new HandlePaths(human).Mods);
+            archive => archive.Deserialize(human.Merge(limits));
+        private static Action<ZipArchive> Deserialize(this Human human, CoordLimit limits) =>
+            archive => archive.Deserialize(human.Merge(limits));
+        private static Action<ZipArchive> Deserialize(int index) =>
+            archive => archive.Deserialize((Action<CharacterModifications>)(mods => Actors[index] = mods));
+        private static void Deserialize<T>(this ZipArchive archive, Action<T> action) where T : new() =>
+            archive.GetEntry(ModificationPath).Deserialize(action);
+        private static void Deserialize<T>(this ZipArchiveEntry entry, Action<T> action) where T : new() =>
+            (entry != null).Either(() => action(new T()),
+                () => entry.Open().With(stream => action(JsonSerializer.Deserialize<T>(stream))).Close());
+        private static Action<CharacterModifications> Merge(this Human human, CharaLimit limits) =>
+            mods => limits.Merge(mods, new HandlePaths(human).Mods);
+        private static Action<CoordinateModifications> Merge(this Human human, CoordLimit limits) =>
+            mods => limits.Merge(mods, new HandlePaths(human).Coordinate);
         private static void Merge(this CharaLimit limits, CharacterModifications src, CharacterModifications dst) =>
             limits.With(MergeBody(src, dst)).With(MergeFace(src, dst)).With(MergeHair(src, dst)).With(MergeCoordinate(src, dst));
         private static Action<CharaLimit> MergeBody(CharacterModifications src, CharacterModifications dst) =>
@@ -389,11 +375,7 @@ namespace SardineHead
                     ? (src.Coordinates[0].Hair, src.Coordinates[1].Hair, src.Coordinates[2].Hair)
                     : (dst.Coordinates[0].Hair, dst.Coordinates[1].Hair, dst.Coordinates[2].Hair);
         private static Action<CharaLimit> MergeCoordinate(CharacterModifications src, CharacterModifications dst) =>
-           limits => dst.Coordinates = (CharaLimit.None != (limits & CharaLimit.Coorde)) ? src.Coordinates : dst.Coordinates;
-        private static Action<ZipArchive> Deserialize(this Human human, CoordLimit limits) =>
-            archive => archive.GetEntry(ModificationPath)?.Open()?.With(human.Merge(limits))?.Close();
-        private static Action<Stream> Merge(this Human human, CoordLimit limits) =>
-            stream => limits.Merge(JsonSerializer.Deserialize<CoordinateModifications>(stream), new HandlePaths(human).Coordinate);
+            limits => dst.Coordinates = (CharaLimit.None != (limits & CharaLimit.Coorde)) ? src.Coordinates : dst.Coordinates;
         private static void Merge(this CoordLimit limits, CoordinateModifications src, CoordinateModifications dst) =>
             limits.With(MergeHair(src, dst)).With(MergeClothes(src, dst)).With(MergeAccessory(src, dst));
         private static Action<CoordLimit> MergeHair(CoordinateModifications src, CoordinateModifications dst) =>
@@ -402,12 +384,10 @@ namespace SardineHead
             limits => dst.Clothes = (CoordLimit.None != (limits & CoordLimit.Clothes)) ? src.Clothes : dst.Clothes;
         private static Action<CoordLimit> MergeAccessory(CoordinateModifications src, CoordinateModifications dst) =>
             limits => dst.Accessory = (CoordLimit.None != (limits & CoordLimit.Accessory)) ? src.Accessory : dst.Accessory;
-        private static void Deserialize(this Human human, Stream stream) => Deserialize(human.GetActorIndex())(stream);
-        private static Action<Stream> Deserialize(int index) =>
-            stream => Actors[index] = JsonSerializer.Deserialize<CharacterModifications>(stream);
-        internal static void Initialize() {
+        internal static void Initialize()
+        {
             Util.Hook<HumanCustom>(() => CustomSceneMods = new(), () => CustomSceneMods = new());
-            Util.Hook<SV.SimulationScene>(() => {}, Actors.Clear);
+            Util.Hook<SV.SimulationScene>(() => { }, Actors.Clear);
         }
     }
     internal static class UIRef
@@ -519,13 +499,15 @@ namespace SardineHead
                 ui.spacing = 10;
                 ui.childAlignment = TextAnchor.UpperLeft;
             });
-            UnityEngine.Object.Instantiate(UIRef.Check, go.transform).With(check => {
+            UnityEngine.Object.Instantiate(UIRef.Check, go.transform).With(check =>
+            {
                 check.AddComponent<LayoutElement>().preferredWidth = 200;
-                check.transform.Find("cb_back").GetComponent<RectTransform>().With(ui => {
-                    ui.anchorMin = new (0.0f,  1.0f);
-                    ui.anchorMax = new (0.0f,  1.0f);
-                    ui.offsetMin = new (0.0f, -24.0f);
-                    ui.offsetMax = new (24.0f,  0.0f);
+                check.transform.Find("cb_back").GetComponent<RectTransform>().With(ui =>
+                {
+                    ui.anchorMin = new(0.0f, 1.0f);
+                    ui.anchorMax = new(0.0f, 1.0f);
+                    ui.offsetMin = new(0.0f, -24.0f);
+                    ui.offsetMax = new(24.0f, 0.0f);
                 });
                 check.GetComponentInChildren<TextMeshProUGUI>().With(ui =>
                 {
@@ -590,6 +572,7 @@ namespace SardineHead
                  {
                      text.overflowMode = TextOverflowModes.Ellipsis;
                      text.SetText(get().ToString());
+                     set += value => text.SetText(value.ToString());
                  });
              });
             UnityEngine.Object.Instantiate(UIRef.Slider, go.transform).With(input =>
@@ -735,13 +718,13 @@ namespace SardineHead
         internal static void Hide() =>
             ContentRoot?.parent?.parent?.parent?.parent?.gameObject?.SetActive(false);
         internal static Action RefreshOperation = Hide;
-        internal static Il2CppSystem.Threading.CancellationTokenSource RefreshCanceler = new();
+        internal static Il2CppSystem.Threading.CancellationTokenSource Canceler = new();
         internal static UniTask RefreshTask = UniTask.CompletedTask;
         internal static ConfigEntry<KeyboardShortcut> Toggle { get; set; }
         internal static ConfigEntry<bool> Status { get; set; }
         internal static void Refresh() => Status.Value.Either(Hide, RefreshOperation);
         internal static void CancelRefresh() =>
-            (!RefreshTask.Status.IsCompleted()).Maybe(RefreshCanceler.Cancel);
+            (!RefreshTask.Status.IsCompleted()).Maybe(Canceler.Cancel);
         internal static void ScheduleRefresh() =>
             RefreshTask.Status.IsCompleted().Maybe(() =>
             {
@@ -766,25 +749,53 @@ namespace SardineHead
                  (4, _) => () => UpdateContent(Current.Accessory(index)),
                  _ => Hide
              }).With(CancelRefresh).With(ScheduleRefresh);
-        internal static Action<UnityEngine.EventSystems.PointerEventData> ReserveCoordinate =
-            _ => Current.Clean();
         internal static Action InputCheck = () =>
             Toggle.Value.IsDown().Maybe(() => (Status.Value = !Status.Value).With(ScheduleRefresh));
         internal static void Setup()
         {
+            RefreshOperation = Hide;
             Canvas.preWillRenderCanvases += InputCheck;
-            UIRef.Casual.OnPointerClickAsObservable().Subscribe(Observer.Create<UnityEngine.EventSystems.PointerEventData>(ReserveCoordinate));
-            UIRef.Job.OnPointerClickAsObservable().Subscribe(Observer.Create<UnityEngine.EventSystems.PointerEventData>(ReserveCoordinate));
-            UIRef.Swim.OnPointerClickAsObservable().Subscribe(Observer.Create<UnityEngine.EventSystems.PointerEventData>(ReserveCoordinate));
             ContentRoot = new GameObject(Plugin.Name).With(UIRef.UIRoot.Wrap).UI().With(ScheduleRefresh);
         }
         internal static void Dispose()
         {
             Canvas.preWillRenderCanvases -= InputCheck;
-            RefreshCanceler.Cancel();
-            RefreshOperation = Hide;
+            Canceler.Cancel();
         }
         internal static void Initialize() => Util.Hook<HumanCustom>(Setup, Dispose);
+    }
+    internal static partial class TextureExtension
+    {
+        private static Dictionary<string, byte[]> Binaries = new();
+        private static string Hash(this byte[] input)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                return Convert.ToHexString(sha256.ComputeHash(input)).With(hash => Binaries.TryAdd(hash, input));
+            }
+        }
+        internal static bool IsExtension(this Texture value) => Binaries.ContainsKey(value.name);
+        internal static RenderTexture ToTexture(this string value) => Binaries[value].Import();
+        internal static RenderTexture Import(this string path) => File.ReadAllBytes(path).Import();
+        private static RenderTexture Import(this byte[] input) =>
+            new Texture2D(256, 256)
+                .With(t2d => ImageConversion.LoadImage(t2d, input))
+                .Import().With(texture => texture.name = Hash(input));
+        private static RenderTexture Import(this Texture2D input) =>
+            new RenderTexture(input.width, input.height, 0)
+                .With(tex => Graphics.Blit(input, tex));
+        internal static void Export(this string path, Texture tex) =>
+            File.WriteAllBytes(path, new Texture2D(tex.width, tex.height)
+                .With(t2d => t2d.Export(tex, RenderTexture.GetTemporary(tex.width, tex.height)))
+                .EncodeToPNG().ToArray());
+        private static void Export(this Texture2D t2d, Texture tex, RenderTexture tmp) =>
+            RenderTexture.active = RenderTexture.active.With(() =>
+            {
+                RenderTexture.active = tmp;
+                GL.Clear(false, true, new Color());
+                Graphics.Blit(tex, tmp);
+                t2d.ReadPixels(new Rect(0, 0, tmp.width, tmp.height), 0, 0);
+            }).With(() => RenderTexture.ReleaseTemporary(tmp));
     }
     internal static class Hooks
     {
@@ -792,23 +803,70 @@ namespace SardineHead
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanBody), nameof(HumanBody.CreateBodyTexture))]
         internal static void HumanBodyCreateBodyTexturePostfix(HumanBody __instance) =>
-            ControlMaterial.Of(__instance.human.Modifications().Body, __instance)
-                .Do(handle => handle.Apply());
+            __instance.ToCtcHandles(__instance.human.Modifications()).Do(handle => handle.Apply());
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanFace), nameof(HumanFace.CreateFaceTexture))]
         internal static void HumanFaceCreateFaceTexturePostfix(HumanFace __instance) =>
-            ControlMaterial.Of(__instance.human.Modifications().Face, __instance)
-                .Do(handle => handle.Apply());
+            __instance.ToCtcHandles(__instance.human.Modifications()).Do(handle => handle.Apply());
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.CreateClothesTexture))]
         internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance, int kind) =>
-            (kind < 7).Either(
-                () => new HandlePaths(__instance.human).Apply(),
-                () => CreateMaterial.Of(__instance.human.Modifications()
-                    .Coordinates[__instance.human.data.Status.coordinateType].Clothes[kind], __instance.clothess[kind])
-                    .Do(handle => handle.Apply()));
+            __instance.clothess[kind].ToCtcHandles(__instance.human.Coordinate().Clothes[kind]).Do(handle => handle.Apply());
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(CustomTextureCreate), nameof(CustomTextureCreate.RebuildTextureAndSetMaterial))]
+        internal static void HumanSetRenderMaterialsPostfix(CustomTextureCreate __instance) =>
+            __instance._trfParent.GetComponent<HumanComponent>().Human.With(human =>
+                ((__instance._matCreate.name.Contains("body_create"), __instance._matCreate.name.Contains("head_create")) switch
+                {
+                    (true, false) => human.body.ToHandles(human.Modifications()),
+                    (false, true) => human.face.ToHandles(human.Modifications()),
+                    _ => []
+                }).Do(handle => handle.Apply()));
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanHair.Hair), nameof(HumanHair.Hair.SetShader))]
+        internal static void HumanHairSetShaderPostfix(HumanHair.Hair __instance) =>
+            ((ChaListDefine.CategoryNo)__instance.infoHair.Category switch
+            {
+                ChaListDefine.CategoryNo.bo_hair_b => 0,
+                ChaListDefine.CategoryNo.bo_hair_f => 1,
+                ChaListDefine.CategoryNo.bo_hair_o => 2,
+                ChaListDefine.CategoryNo.bo_hair_s => 3,
+                _ => -1
+            }).With(index => (index >= 0).Maybe(() =>
+                __instance.objHair.GetComponentInParent<HumanComponent>()
+                    .Human.Coordinate().Hair[index].ToHandles(__instance.renderers)
+                    .Do(handle => handle.Apply())));
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth.Clothes), nameof(HumanCloth.Clothes.SetShader))]
+        internal static void HumanClothSetShaderPostfix(HumanCloth.Clothes __instance) =>
+            ((ChaListDefine.CategoryNo)__instance.infoClothes.Category switch
+            {
+                ChaListDefine.CategoryNo.co_top => 0,
+                ChaListDefine.CategoryNo.co_bot => 1,
+                ChaListDefine.CategoryNo.co_bra => 2,
+                ChaListDefine.CategoryNo.co_shorts => 3,
+                ChaListDefine.CategoryNo.co_gloves => 4,
+                ChaListDefine.CategoryNo.co_panst => 5,
+                ChaListDefine.CategoryNo.co_socks => 6,
+                ChaListDefine.CategoryNo.co_shoes => 7,
+                _ => -1
+            }).With(index => (index >= 0).Maybe(() =>
+                __instance.cusClothesCmp.ToHandles(__instance.objClothes
+                    .GetComponentInParent<HumanComponent>().Human.Coordinate().Clothes[index])
+                    .Do(handle => handle.Apply())));
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanAccessory.Accessory), nameof(HumanAccessory.Accessory.CreateMove))]
+        internal static void AccessoryCreateMovePostfix(HumanAccessory.Accessory __instance, GameObject obj) =>
+            obj.name.StartsWith("ca_slot").Maybe(() => UniTask.NextFrame().ContinueWith((Action)(() =>
+                obj.GetComponentInParent<HumanComponent>()
+                    .Human.Coordinate().Accessory[int.Parse(obj.name[7..])].ToHandles(__instance?.renderers)
+                    .Do(handle => handle.Apply()))));
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(CategorySelection), nameof(CategorySelection.OpenView), typeof(int))]
@@ -833,6 +891,7 @@ namespace SardineHead
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
                 .With(() => Instance = this)
+                .With(() => Log.LogInfo(ChaFileDefine.AccessorySlotNum))
                 .With(UIFactory.Initialize)
                 .With(ModificationExtension.Initialize)
                 .With(TextureExtension.Initialize)
@@ -852,7 +911,7 @@ namespace SardineHead
         private void ListenOnCoordinateSerialize() =>
             Event.OnCoordinateSerialize += (archive) => archive.SerializeCoordinate();
         private void ListenOnCoordinateInitialize() =>
-            Event.OnCoordinateInitialize += (human, archive) => archive.Deserialize(human);
+            Event.OnCoordinateInitialize += (index, archive) => archive.Deserialize(index);
         private void ListenOnCoordinateDeserialize() =>
             Event.OnCoordinateDeserialize += (human, limits, archive) => archive.DeserializeCoordinate(human, limits);
         private void ListenOnActorSerialize() =>
