@@ -2,10 +2,6 @@
 
 Runtime texture and material modifier tool for SamabakeScramble character creation
 
-Currently, pretty unstable release.
-
-Now sardine head persist (smells fishy).
-
 Some character state dependant properties like sweat, wet, liquid may be overriden by this mod, modify them with caution.
 
 # Prerequests
@@ -23,6 +19,7 @@ These directories contained in previous releases are no longer used.
 Please delete it.
 
  * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/chara
+ * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/default
  * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/textures
 
 # How to use

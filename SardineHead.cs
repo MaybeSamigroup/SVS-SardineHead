@@ -87,9 +87,10 @@ namespace SardineHead
         internal Dictionary<string, Action<Color>> SetColors = new();
         internal Dictionary<string, Action<Vector4>> SetVectors = new();
         internal Dictionary<string, Action<Texture>> SetTextures = new();
-        internal Dictionary<string, Action<GameObject>> Handles { get; init; } = new();
+        internal Dictionary<string, Action<Transform>> Handles { get; init; } = new();
         internal MaterialHandle(Material material, string label, Mods mods) =>
-            ((Value, Label, Mods) = (material, label, mods)).With(() => Mods.TryAdd(Label, new())).With(PrepareSetters).With(PopulateHandles);
+            ((Value, Label, Mods) = (material, label, mods))
+                .With(() => Mods.TryAdd(Label, new())).With(PrepareSetters).With(PopulateHandles);
         private void PrepareSetters() =>
             (SetInt, SetFloat, SetColor, SetVector, SetTexture) =
                 (Value.SetInt, Value.SetFloat, Value.SetColor, Value.SetVector, Value.SetTexture);
@@ -118,39 +119,40 @@ namespace SardineHead
             {
                 ShaderPropertyType.Int =>
                     SetInts.TryAdd(name, input => SetInt(id, input)) &&
-                    Handles.TryAdd(name, go => go.IntEdit(
-                        () => Value.GetInt(id), value => SetInts[name](value),
-                        Mods[Label].IntValues.ContainsKey(name), IntToggle(id, name))),
+                    Handles.TryAdd(name, go => UnityEngine.Object.Instantiate(UIRef.IntEditBase, go.transform)
+                            .With(name.CommonEdit(Mods[Label].IntValues.ContainsKey(name), IntToggle(id, name)))
+                            .IntEdit(() => Value.GetInt(id), value => SetInts[name](value))),
 
                 ShaderPropertyType.Float =>
                     SetFloats.TryAdd(name, input => SetFloat(id, input)) &&
-                    Handles.TryAdd(name, go => go.FloatEdit(
-                        () => Value.GetFloat(id), value => SetFloats[name](value),
-                        Mods[Label].FloatValues.ContainsKey(name), FloatToggle(id, name))),
+                    Handles.TryAdd(name, tf => UnityEngine.Object.Instantiate(UIRef.FloatEditBase, tf)
+                        .With(name.CommonEdit(Mods[Label].FloatValues.ContainsKey(name), FloatToggle(id, name)))
+                        .FloatEdit(() => Value.GetFloat(id), value => SetFloats[name](value))),
 
                 ShaderPropertyType.Range =>
                     SetFloats.TryAdd(name, input => SetFloat(id, input)) &&
-                    Handles.TryAdd(name, go => go.RangeEdit(
-                        () => Value.GetFloat(id), value => SetFloats[name](value), limits(),
-                        Mods[Label].FloatValues.ContainsKey(name), FloatToggle(id, name))),
+                    Handles.TryAdd(name, tf => UnityEngine.Object.Instantiate(UIRef.RangeEditBase, tf)
+                        .With(name.CommonEdit(Mods[Label].FloatValues.ContainsKey(name), FloatToggle(id, name)))
+                        .RangeEdit(() => Value.GetFloat(id), value => SetFloats[name](value), limits())),
 
                 ShaderPropertyType.Color =>
                     SetColors.TryAdd(name, input => SetColor(id, input)) &&
-                    Handles.TryAdd(name, go => go.ColorEdit(
-                        () => Value.GetColor(id), value => SetColors[name](value),
-                        Mods[Label].ColorValues.ContainsKey(name), ColorToggle(id, name))),
+                    Handles.TryAdd(name, tf => UnityEngine.Object.Instantiate(UIRef.ColorEditBase, tf)
+                        .With(name.CommonEdit(Mods[Label].ColorValues.ContainsKey(name), ColorToggle(id, name)))
+                        .ColorEdit(() => Value.GetColor(id), value => SetColors[name](value))),
 
                 ShaderPropertyType.Vector =>
                     SetVectors.TryAdd(name, input => SetVector(id, input)) &&
-                    Handles.TryAdd(name, go => go.VectorEdit(
-                        () => Value.GetVector(id), value => SetVectors[name](value),
-                        Mods[Label].VectorValues.ContainsKey(name), VectorToggle(id, name))),
+                    Handles.TryAdd(name, tf => UnityEngine.Object.Instantiate(UIRef.VectorEditBase, tf)
+                        .With(name.CommonEdit(Mods[Label].VectorValues.ContainsKey(name), VectorToggle(id, name)))
+                        .VectorEdit(() => Value.GetVector(id), value => SetVectors[name](value))),
 
                 ShaderPropertyType.Texture =>
                     SetTextures.TryAdd(name, input => SetTexture(id, input)) &&
-                    Handles.TryAdd(name, go => go.TextureEdit(
-                        () => Value.GetTexture(id), value => SetTextures[name](value),
-                        Mods[Label].TextureHashes.ContainsKey(name), TextureToggle(id, name))),
+                    Handles.TryAdd(name, tf => UnityEngine.Object.Instantiate(UIRef.TextureEditBase, tf)
+                        .With(name.CommonEdit(Mods[Label].TextureHashes.ContainsKey(name), TextureToggle(id, name)))
+                        .TextureEdit(() => Value.GetTexture(id), value => SetTextures[name](value))),
+
                 _ => false
             };
         internal void Apply() => Mods[Label].With(ApplyInt).With(ApplyFloat).With(ApplyColor).With(ApplyVector).With(ApplyTexture);
@@ -192,11 +194,14 @@ namespace SardineHead
     }
     internal static class MaterialHandleExtension
     {
+        internal static IEnumerable<Renderer> ToRenderers(this Transform tf) =>
+            Enumerable.Range(0, tf.childCount).Select(idx => tf.GetChild(idx).gameObject).SelectMany(ToRenderers);
+        internal static IEnumerable<Renderer> ToRenderers(this GameObject go) =>
+            go.GetComponents<Renderer>().Concat(ToRenderers(go.transform));
         internal static IEnumerable<MaterialHandle> ToCtcHandles(this HumanFace face, CharacterModifications mods) =>
             face?.customTexCtrlFace == null ? [] : [new ControlMaterial(face.customTexCtrlFace, face.objHead.name, mods.Face)];
         internal static IEnumerable<MaterialHandle> ToCtcHandles(this HumanBody body, CharacterModifications mods) =>
             body?.customTexCtrlBody == null ? [] : [new ControlMaterial(body.customTexCtrlBody, body.objBody.name, mods.Body)];
-        internal static IEnumerable<Renderer> Normalize(IEnumerable<Renderer> renderers) => renderers == null ? [] : renderers;
         internal static IEnumerable<MaterialHandle> ToHandles(this Mods mods, params Renderer[] renderers) =>
             (renderers ?? []).Where(renderer => renderer != null).Distinct()
                 .Select(renderer => new MaterialHandle(renderer.material, renderer.name ?? renderer.gameObject.name, mods));
@@ -218,9 +223,7 @@ namespace SardineHead
         internal static IEnumerable<MaterialHandle> ToBodyHandles(this HumanBody body, CharacterModifications mods) =>
             mods.Body.ToHandles(body?.rendBody);
         internal static IEnumerable<MaterialHandle> ToNailsHandles(this HumanBody body, CharacterModifications mods) =>
-            mods.Nails.ToHandles([
-                .. Normalize(body?.hand?.nailObject?.obj?.GetComponentsInChildren<Renderer>()),
-                .. Normalize(body?.leg?.nailObject?.obj?.GetComponentsInChildren<Renderer>())]);
+            mods.Nails.ToHandles([.. body?.hand?.nailObject?.obj?.ToRenderers() ?? [], .. body?.leg?.nailObject?.obj?.ToRenderers() ?? []]);
         private static Dictionary<int, Tuple<int, int>> LastHairIds = new();
         private static Dictionary<int, Tuple<int, int>> LastClothesIds = new();
         private static Dictionary<int, Tuple<int, int>> LastAccessoryIds = new();
@@ -230,16 +233,15 @@ namespace SardineHead
                 : (info.Category, info.Id) != (lasts[index].Item1, lasts[index].Item2)
                     ? mods => mods.With(() => lasts[index] = new(info.Category, info.Id)).Clear() : _ => { };
         internal static IEnumerable<MaterialHandle> ToHandles(this HumanHair hair, CoordinateModifications mods, int index) =>
-            hair.hairs[index]?.ToHandles(mods.Hair[index].With(Identify(hair.hairs[index]?.infoHair, LastHairIds, index))) ?? [];
-        internal static IEnumerable<MaterialHandle> ToHandles(this HumanHair.Hair hair, Mods mods) => mods.ToHandles(hair.renderers);
+            hair?.hairs?[index]?.ToHandles(mods.Hair[index].With(Identify(hair?.hairs?[index]?.infoHair, LastHairIds, index))) ?? [];
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanHair.Hair hair, Mods mods) =>
+            mods.ToHandles([.. hair?.cusHairCmp?.gameObject?.ToRenderers() ?? []]);
         internal static IEnumerable<MaterialHandle> ToHandles(this HumanCloth cloth, CoordinateModifications mods, int index) =>
-            cloth.clothess[index]?.ToHandles(mods.Clothes[index].With(Identify(cloth.clothess[index]?.infoClothes, LastClothesIds, index))) ?? [];
+            cloth?.clothess?[index]?.ToHandles(mods.Clothes[index].With(Identify(cloth?.clothess?[index]?.infoClothes, LastClothesIds, index))) ?? [];
         internal static IEnumerable<MaterialHandle> ToHandles(this HumanCloth.Clothes clothes, Mods mods) =>
-            [.. clothes.ToCtcHandles(mods), .. clothes.cusClothesCmp?.ToHandles(mods)];
-        internal static IEnumerable<MaterialHandle> ToHandles(this ChaClothesComponent cmpClothes, Mods mods) => mods.ToHandles(
-            [ cmpClothes?.rendAccessory, cmpClothes?.rendEmblem01, cmpClothes?.rendEmblem02
-            , ..Normalize(cmpClothes?.exRendEmblem01), ..Normalize(cmpClothes?.exRendEmblem02)
-            , ..Normalize(cmpClothes?.rendNormal01), ..Normalize(cmpClothes?.rendNormal02), ..Normalize(cmpClothes?.rendNormal03)]);
+            [.. clothes?.ToCtcHandles(mods) ?? [], .. clothes?.cusClothesCmp?.ToHandles(mods) ?? []];
+        internal static IEnumerable<MaterialHandle> ToHandles(this ChaClothesComponent cmp, Mods mods) =>
+            cmp == null ? [] : mods.ToHandles([.. cmp.gameObject.ToRenderers()]);
         private static Func<CustomTextureCreate, int, bool>[] Rebuilds(ChaClothesComponent cmp) =>
             cmp == null ? [] : [cmp.Rebuild01, cmp.Rebuild02, cmp.Rebuild03, cmp.RebuildAccessory, cmp.RebuildAccessory];
         internal static IEnumerable<MaterialHandle> ToCtcHandles(this HumanCloth.Clothes clothes, Mods mods) =>
@@ -247,8 +249,20 @@ namespace SardineHead
                 .Where((_, idx) => idx < clothes.ctCreateClothes.Count && null != clothes.ctCreateClothes[idx])
                 .Select((update, idx) => new CreateMaterial(clothes.ctCreateClothes[idx], update, $"{clothes.cusClothesCmp.name}{idx}", mods));
         internal static IEnumerable<MaterialHandle> ToHandles(this HumanAccessory acs, CoordinateModifications mods, int index) =>
-            acs.accessories[index]?.ToHandles(mods.Accessory[index].With(Identify(acs.accessories[index]?.infoAccessory, LastAccessoryIds, index))) ?? [];
-        internal static IEnumerable<MaterialHandle> ToHandles(this HumanAccessory.Accessory acs, Mods mods) => mods.ToHandles(acs.renderers);
+            acs?.accessories?[index]?.ToHandles(mods.Accessory[index].With(Identify(acs?.accessories?[index]?.infoAccessory, LastAccessoryIds, index))) ?? [];
+        internal static IEnumerable<MaterialHandle> ToHandles(this HumanAccessory.Accessory acs, Mods mods) =>
+            mods.ToHandles([.. acs?.cusAcsCmp?.gameObject?.ToRenderers() ?? []]);
+        internal static IEnumerable<MaterialHandle> ToHandles(this Human human, CharacterModifications mods) =>
+            human.body.ToCtcHandles(mods).Concat(human.body.ToHandles(mods))
+                .Concat(human.face.ToCtcHandles(mods)).Concat(human.face.ToHandles(mods))
+                .Concat(Enumerable.Range(0, 4)
+                    .SelectMany(index => human?.hair?.hairs[index]?.ToHandles(human.Coordinate().Hair[index]) ?? []))
+                .Concat(Enumerable.Range(0, 8)
+                    .SelectMany(index => (human?.cloth?.clothess[index]?.ToCtcHandles(human.Coordinate().Clothes[index] ?? [])
+                        .Concat(human?.cloth?.clothess[index]?.ToHandles(human.Coordinate().Clothes[index] ?? [])))))
+                .Concat(Enumerable.Range(0, ChaFileDefine.AccessorySlotNum)
+                    .SelectMany(index => human?.acs?.accessories[index]?.ToHandles(human.Coordinate().Accessory[index]) ?? []));
+        internal static void Apply(this Human human) => ToHandles(human, human.Modifications()).Do(handle => handle.Apply());
     }
     internal class HandlePaths
     {
@@ -261,8 +275,7 @@ namespace SardineHead
         internal IEnumerable<MaterialHandle> Eyelines => Target.face.ToEyelinesHandles(Mods);
         internal IEnumerable<MaterialHandle> Eyes => Target.face.ToEyesHandles(Mods);
         internal IEnumerable<MaterialHandle> Tooth => Target.face.ToToothHandles(Mods);
-        internal IEnumerable<MaterialHandle> Body => Target.body.ToCtcHandles(Mods).Concat(Target.body.ToBodyHandles(Mods));
-        internal IEnumerable<MaterialHandle> Nails => Target.body.ToNailsHandles(Mods);
+        internal IEnumerable<MaterialHandle> Body => Target.body.ToCtcHandles(Mods).Concat(Target.body.ToHandles(Mods));
         internal IEnumerable<MaterialHandle> Hair(int index) => Target.hair.ToHandles(Coordinate, index);
         internal IEnumerable<MaterialHandle> Clothes(int index) => Target.cloth.ToHandles(Coordinate, index);
         internal IEnumerable<MaterialHandle> Accessory(int index) => Target.acs.ToHandles(Coordinate, index);
@@ -313,7 +326,8 @@ namespace SardineHead
             (HumanCustom.Instance?.Human != null).Either(
                 () => UniTask.NextFrame().ContinueWith((Action)(() => archive.Deserialize(limits))),
                 () => archive.With(TextureExtension.Deserialize)
-                        .With(HumanCustom.Instance.Human.Deserialize(limits)));
+                        .With(HumanCustom.Instance.Human.Deserialize(limits))
+                        .With(HumanCustom.Instance.Human.Apply));
         internal static void DeserializeCoordinate(this ZipArchive archive, Human human, CoordLimit limits) =>
             archive.With(TextureExtension.Deserialize).With(Deserialize(human, limits));
         internal static void Deserialize(this ZipArchive archive, int index) =>
@@ -392,26 +406,196 @@ namespace SardineHead
     }
     internal static class UIRef
     {
-        internal static Transform Window => SV.Config.ConfigWindow.Instance.transform
-                .Find("Canvas").Find("Background").Find("MainWindow");
+        internal static Transform Window = SV.Config.ConfigWindow.Instance.transform.Find("Canvas").Find("Background").Find("MainWindow");
         internal static Transform Content(this Transform tf) =>
             tf.Find("Settings").Find("Scroll View").Find("Viewport").Find("Content");
-        internal static Transform Title => Window.Content().Find("CameraSetting").Find("imgTitle");
-        internal static GameObject Label => Window.Content().Find("CameraSetting").Find("Content").Find("Look").Find("Title").gameObject;
-        internal static GameObject Input => HumanCustom.Instance.StateMiniSelection.transform.Find("Window")
-                .Find("StateWindow").Find("Pose")
-                .Find("PosePtn").Find("Layout").Find("ptnSelect").Find("InputField_Integer").gameObject;
-        internal static GameObject Color => HumanCustom.Instance.StateMiniSelection.transform
-            .Find("Window").Find("StateWindow").Find("Light").Find("grpLighting").Find("colorLight").gameObject;
-        internal static GameObject Check => HumanCustom.Instance.StateMiniSelection.transform
-            .Find("Window").Find("StateWindow").Find("Clothes").Find("tglVisibleGroup").Find("imgTglCol00").gameObject;
-        internal static GameObject Slider => Window.Content().Find("CameraSetting").Find("Content").Find("SensitivityX").Find("Slider").gameObject;
         internal static Transform UIRoot => HumanCustom.Instance.gameObject.transform.Find("UI").Find("Root");
-        internal static GameObject Import => HumanCustom.Instance.CustomCharaFile.FileWindow._btnLoad.gameObject;
-        internal static GameObject Export => HumanCustom.Instance.CustomCharaFile.FileWindow._btnSave.gameObject;
-        internal static Toggle Casual => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("01_Plain").GetComponent<Toggle>();
-        internal static Toggle Job => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("02_Roomwear").GetComponent<Toggle>();
-        internal static Toggle Swim => UIRoot.Find("Cvs_Coorde").Find("BG").Find("CoordinateType").Find("03_Bathing").GetComponent<Toggle>();
+        internal static GameObject Text =>
+            Window.Content().Find("CameraSetting").Find("Content").Find("Look").Find("Title").gameObject;
+        internal static GameObject Input =>
+            HumanCustom.Instance.StateMiniSelection.transform.Find("Window").Find("StateWindow")
+                .Find("Pose").Find("PosePtn").Find("Layout").Find("ptnSelect").Find("InputField_Integer").gameObject;
+        internal static GameObject Color =>
+            HumanCustom.Instance.StateMiniSelection.transform
+                .Find("Window").Find("StateWindow").Find("Light").Find("grpLighting").Find("colorLight").gameObject;
+        internal static GameObject Check =>
+            HumanCustom.Instance.StateMiniSelection.transform
+                .Find("Window").Find("StateWindow").Find("Clothes").Find("tglVisibleGroup").Find("imgTglCol00").gameObject;
+        internal static GameObject Slider =>
+            Window.Content().Find("CameraSetting").Find("Content").Find("SensitivityX").Find("Slider").gameObject;
+        internal static GameObject Button =>
+            HumanCustom.Instance.CustomCharaFile.FileWindow.CharaCategory._btnSelect.gameObject;
+        internal static void FitLayout<T>(this GameObject go) where T : HorizontalOrVerticalLayoutGroup
+        {
+            go.AddComponent<RectTransform>().localScale = new(1.0f, 1.0f);
+            go.AddComponent<LayoutElement>();
+            go.AddComponent<T>().With(ui =>
+            {
+                ui.childControlWidth = true;
+                ui.childControlHeight = true;
+            });
+            go.AddComponent<ContentSizeFitter>().With(ui =>
+            {
+                ui.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                ui.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            });
+        }
+        internal static void Label(this GameObject go)
+        {
+            go.GetComponent<RectTransform>();
+            go.GetComponent<HorizontalLayoutGroup>().With(ui =>
+            {
+                ui.padding = new(10, 0, 2, 2);
+                ui.spacing = 10;
+                ui.childAlignment = TextAnchor.UpperLeft;
+            });
+            UnityEngine.Object.Instantiate(UIRef.Check, go.transform).With(check =>
+            {
+                check.AddComponent<LayoutElement>().preferredWidth = 200;
+                check.transform.Find("cb_back").GetComponent<RectTransform>().With(ui =>
+                {
+                    ui.anchorMin = new(0.0f, 1.0f);
+                    ui.anchorMax = new(0.0f, 1.0f);
+                    ui.offsetMin = new(0.0f, -24.0f);
+                    ui.offsetMax = new(24.0f, 0.0f);
+                });
+                check.GetComponentInChildren<TextMeshProUGUI>().With(ui =>
+                {
+                    ui.maxVisibleLines = 4;
+                    ui.enableWordWrapping = true;
+                    ui.overflowMode = TextOverflowModes.Ellipsis;
+                    ui.verticalAlignment = VerticalAlignmentOptions.Top;
+                    ui.horizontalAlignment = HorizontalAlignmentOptions.Left;
+                    ui.SetText(go.name.Replace('_', ' ').Trim());
+                });
+            });
+        }
+
+        internal static Action<GameObject> NumericEdit(this TMP_InputField.ContentType type, string desc) => go =>
+        {
+            UnityEngine.Object.Instantiate(Text, go.transform).With(label =>
+            {
+                label.AddComponent<LayoutElement>().preferredWidth = 80;
+                label.GetComponent<TextMeshProUGUI>().SetText(desc);
+            });
+            UnityEngine.Object.Instantiate(Input, go.transform).With(input =>
+            {
+                input.AddComponent<LayoutElement>().preferredWidth = 120;
+                input.GetComponent<TMP_InputField>().With(ui =>
+                {
+                    ui.contentType = type;
+                    ui.characterLimit = 10;
+                    ui.restoreOriginalTextOnEscape = true;
+                });
+            });
+        };
+        internal static void RangeEdit(this GameObject go)
+        {
+            UnityEngine.Object.Instantiate(Text, go.transform).With(label =>
+             {
+                 label.AddComponent<LayoutElement>().preferredWidth = 100;
+                 label.GetComponent<TextMeshProUGUI>().overflowMode = TextOverflowModes.Ellipsis;
+             });
+            UnityEngine.Object.Instantiate(Slider, go.transform)
+                .AddComponent<LayoutElement>().preferredWidth = 100;
+        }
+        internal static void ColorEdit(this GameObject go)
+        {
+            UnityEngine.Object.Instantiate(Color, go.transform)
+                .AddComponent<LayoutElement>().preferredWidth = 100;
+        }
+        internal static void VectorEdit(this GameObject go)
+        {
+            new GameObject("VectorValues").With(go.transform.Wrap).With(FitLayout<VerticalLayoutGroup>).With(vs =>
+            {
+                vs.GetComponent<LayoutElement>().preferredWidth = 230;
+                new GameObject("x").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
+                    .With(TMP_InputField.ContentType.DecimalNumber.NumericEdit("flaot(x)"));
+                new GameObject("y").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
+                    .With(TMP_InputField.ContentType.DecimalNumber.NumericEdit("flaot(y)"));
+                new GameObject("z").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
+                    .With(TMP_InputField.ContentType.DecimalNumber.NumericEdit("flaot(z)"));
+                new GameObject("w").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
+                    .With(TMP_InputField.ContentType.DecimalNumber.NumericEdit("flaot(w)"));
+            });
+        }
+        internal static void TextureEdit(this GameObject go)
+        {
+            new GameObject("TextureValues").With(go.transform.Wrap).With(FitLayout<VerticalLayoutGroup>).With(vt =>
+            {
+                UnityEngine.Object.Instantiate(Text, vt.transform).With(label =>
+                {
+                    label.AddComponent<LayoutElement>().preferredWidth = 200;
+                    label.GetComponent<TextMeshProUGUI>().overflowMode = TextOverflowModes.Ellipsis;
+                });
+                new GameObject("Buttons").With(vt.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>).With(hr =>
+                {
+                    UnityEngine.Object.Instantiate(Button, hr.transform).With(button =>
+                    {
+                        button.AddComponent<LayoutElement>().With(ui =>
+                        {
+                            ui.preferredWidth = 100;
+                            ui.preferredHeight = 30;
+                        });
+                        button.GetComponentsInChildren<TextMeshProUGUI>().Do(ui =>
+                        {
+                            ui.autoSizeTextContainer = true;
+                            ui.SetText("import");
+                        });
+                        button.GetComponent<Button>().interactable = true;
+                    });
+                    UnityEngine.Object.Instantiate(Button, hr.transform).With(button =>
+                    {
+                        button.AddComponent<LayoutElement>().With(ui =>
+                        {
+                            ui.preferredWidth = 100;
+                            ui.preferredHeight = 30;
+                        });
+                        button.GetComponentsInChildren<TextMeshProUGUI>().Do(ui =>
+                        {
+                            ui.autoSizeTextContainer = true;
+                            ui.SetText("export");
+                        });
+                        button.GetComponent<Button>().interactable = true;
+                    });
+                });
+            });
+        }
+        internal static GameObject Title { get; set; }
+        internal static GameObject IntEditBase { get; set; }
+        internal static GameObject FloatEditBase { get; set; }
+        internal static GameObject RangeEditBase { get; set; }
+        internal static GameObject ColorEditBase { get; set; }
+        internal static GameObject VectorEditBase { get; set; }
+        internal static GameObject TextureEditBase { get; set; }
+
+        internal static void Setup()
+        {
+            Title = UnityEngine.Object.Instantiate(Window.Content().Find("CameraSetting").Find("imgTitle").gameObject);
+            IntEditBase = new GameObject("IntEditBase").With(FitLayout<HorizontalLayoutGroup>)
+                .With(Label).With(TMP_InputField.ContentType.IntegerNumber.NumericEdit("int:"));
+            FloatEditBase = new GameObject("IntEditBase").With(FitLayout<HorizontalLayoutGroup>)
+                .With(Label).With(TMP_InputField.ContentType.IntegerNumber.NumericEdit("int:"));
+            RangeEditBase = new GameObject("RangeEditBase")
+                .With(FitLayout<HorizontalLayoutGroup>).With(Label).With(RangeEdit);
+            ColorEditBase = new GameObject("ColorEditBase")
+                .With(FitLayout<HorizontalLayoutGroup>).With(Label).With(ColorEdit);
+            VectorEditBase = new GameObject("VectorEditBase")
+                .With(FitLayout<HorizontalLayoutGroup>).With(Label).With(VectorEdit);
+            TextureEditBase = new GameObject("TextureEditBase")
+                .With(FitLayout<HorizontalLayoutGroup>).With(Label).With(TextureEdit);
+        }
+        internal static void Dispose()
+        {
+            UnityEngine.Object.Destroy(Title);
+            UnityEngine.Object.Destroy(IntEditBase);
+            UnityEngine.Object.Destroy(FloatEditBase);
+            UnityEngine.Object.Destroy(RangeEditBase);
+            UnityEngine.Object.Destroy(ColorEditBase);
+            UnityEngine.Object.Destroy(VectorEditBase);
+            UnityEngine.Object.Destroy(TextureEditBase);
+        }
+        internal static void Initialize() => Util.Hook<HumanCustom>(Setup, Dispose);
     }
     internal static class UIFactory
     {
@@ -469,214 +653,82 @@ namespace SardineHead
                 .With(Cleanup).With(tf => handles.Do(handle => tf.View(handle))).With(Show));
         internal static void View(this Transform root, MaterialHandle handle) =>
             root.With(handle.Label.Title).With(handle.Value.name.Title)
-                .With(() => handle.Handles.Do(entry => new GameObject(entry.Key)
-                    .With(root.Wrap).With(FitLayout<HorizontalLayoutGroup>).With(Label).With(entry.Value)));
+                .With(() => handle.Handles.Values.Do(action => action(root)));
         internal static void Title(this string name, Transform root) =>
             UnityEngine.Object
                 .Instantiate(UIRef.Title, root)
                 .GetComponentInChildren<TextMeshProUGUI>().SetText($"{name}");
-        internal static void FitLayout<T>(this GameObject go) where T : HorizontalOrVerticalLayoutGroup
+
+        internal static Action<GameObject> CommonEdit(this string name, bool state, Action<bool> toggle) => go =>
         {
-            go.AddComponent<RectTransform>().localScale = new(1.0f, 1.0f);
-            go.AddComponent<LayoutElement>();
-            go.AddComponent<T>().With(ui =>
-            {
-                ui.childControlWidth = true;
-                ui.childControlHeight = true;
-            });
-            go.AddComponent<ContentSizeFitter>().With(ui =>
-            {
-                ui.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-                ui.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            });
-        }
-        internal static void Label(this GameObject go)
-        {
-            go.GetComponent<RectTransform>();
-            go.GetComponent<HorizontalLayoutGroup>().With(ui =>
-            {
-                ui.padding = new(10, 0, 2, 2);
-                ui.spacing = 10;
-                ui.childAlignment = TextAnchor.UpperLeft;
-            });
-            UnityEngine.Object.Instantiate(UIRef.Check, go.transform).With(check =>
-            {
-                check.AddComponent<LayoutElement>().preferredWidth = 200;
-                check.transform.Find("cb_back").GetComponent<RectTransform>().With(ui =>
-                {
-                    ui.anchorMin = new(0.0f, 1.0f);
-                    ui.anchorMax = new(0.0f, 1.0f);
-                    ui.offsetMin = new(0.0f, -24.0f);
-                    ui.offsetMax = new(24.0f, 0.0f);
-                });
-                check.GetComponentInChildren<TextMeshProUGUI>().With(ui =>
-                {
-                    ui.maxVisibleLines = 4;
-                    ui.enableWordWrapping = true;
-                    ui.overflowMode = TextOverflowModes.Ellipsis;
-                    ui.verticalAlignment = VerticalAlignmentOptions.Top;
-                    ui.horizontalAlignment = HorizontalAlignmentOptions.Left;
-                    ui.SetText(go.name.Replace('_', ' ').Trim());
-                });
-            });
-        }
-        internal static void NumericEdit(this GameObject go, string desc, Func<string> get, Action<string> set, TMP_InputField.ContentType type)
-        {
-            UnityEngine.Object.Instantiate(UIRef.Label, go.transform).With(label =>
-            {
-                label.AddComponent<LayoutElement>().preferredWidth = 80;
-                label.GetComponent<TextMeshProUGUI>().SetText(desc);
-            });
-            UnityEngine.Object.Instantiate(UIRef.Input, go.transform).With(input =>
-            {
-                input.AddComponent<LayoutElement>().preferredWidth = 120;
-                input.GetComponent<TMP_InputField>().With(ui =>
-                {
-                    ui.contentType = type;
-                    ui.characterLimit = 10;
-                    ui.onSubmit.AddListener(set);
-                    ui.restoreOriginalTextOnEscape = true;
-                    ui.SetText(get());
-                });
-            });
-        }
-        internal static void IntEdit(this GameObject go, Func<int> get, Action<int> set, bool state, Action<bool> toggle)
-        {
+            go.GetComponentInChildren<TextMeshProUGUI>().SetText(name);
             go.GetComponentInChildren<Toggle>().With(ui =>
             {
                 ui.onValueChanged.AddListener(toggle);
                 ui.isOn = state;
             });
-            NumericEdit(go, "int:", () => get().ToString(), value => set(int.Parse(value)), TMP_InputField.ContentType.IntegerNumber);
-        }
-        internal static void FloatEdit(this GameObject go, Func<float> get, Action<float> set, bool state, Action<bool> toggle)
+        };
+        internal static void IntEdit(this GameObject go, Func<int> get, Action<int> set)
         {
-            go.GetComponentInChildren<Toggle>().With(ui =>
+            go.GetComponentInChildren<TMP_InputField>().With(ui =>
             {
-                ui.onValueChanged.AddListener(toggle);
-                ui.isOn = state;
-            });
-            NumericEdit(go, "float:", () => get().ToString(), value => set(float.Parse(value)), TMP_InputField.ContentType.DecimalNumber);
-        }
-        internal static void RangeEdit(this GameObject go, Func<float> get, Action<float> set, Vector2 range, bool state, Action<bool> toggle)
-        {
-            go.GetComponentInChildren<Toggle>().With(ui =>
-            {
-                ui.onValueChanged.AddListener(toggle);
-                ui.isOn = state;
-            });
-            UnityEngine.Object.Instantiate(UIRef.Label, go.transform).With(label =>
-             {
-                 label.AddComponent<LayoutElement>().preferredWidth = 100;
-                 label.GetComponent<TextMeshProUGUI>().With(text =>
-                 {
-                     text.overflowMode = TextOverflowModes.Ellipsis;
-                     text.SetText(get().ToString());
-                     set += value => text.SetText(value.ToString());
-                 });
-             });
-            UnityEngine.Object.Instantiate(UIRef.Slider, go.transform).With(input =>
-            {
-                input.AddComponent<LayoutElement>().preferredWidth = 100;
-                input.GetComponent<Slider>().With(ui =>
-                {
-                    ui.value = get();
-                    ui.minValue = range.x;
-                    ui.maxValue = range.y;
-                    ui.onValueChanged.AddListener(set);
-                });
+                ui.SetText(get().ToString());
+                ui.onSubmit.AddListener((Action<string>)(value => set(int.Parse(value))));
             });
         }
-        internal static void ColorEdit(this GameObject go, Func<Color> get, Action<Color> set, bool state, Action<bool> toggle)
+        internal static void FloatEdit(this GameObject go, Func<float> get, Action<float> set)
         {
-            go.GetComponentInChildren<Toggle>().With(ui =>
+            go.GetComponentInChildren<TMP_InputField>().With(ui =>
             {
-                ui.onValueChanged.AddListener(toggle);
-                ui.isOn = state;
-            });
-            UnityEngine.Object.Instantiate(UIRef.Color, go.transform).With(input =>
-            {
-                input.AddComponent<LayoutElement>().preferredWidth = 100;
-                input.GetComponent<ThumbnailColor>().Initialize(go.name, get, (Func<Color, bool>)(color => true.With(() => set(color))), true, true);
+                ui.SetText(get().ToString());
+                ui.onSubmit.AddListener((Action<string>)(value => set(float.Parse(value))));
             });
         }
-        internal static void VectorEdit(this GameObject go, Func<Vector4> get, Action<Vector4> set, bool state, Action<bool> toggle)
+        internal static void RangeEdit(this GameObject go, Func<float> get, Action<float> set, Vector2 range)
         {
-            go.GetComponentInChildren<Toggle>().With(ui =>
+            go.GetComponentsInChildren<TextMeshProUGUI>()[^1].With(ui =>
             {
-                ui.onValueChanged.AddListener(toggle);
-                ui.isOn = state;
+                ui.SetText(get().ToString());
+                set += value => ui.SetText(value.ToString());
             });
-            new GameObject("VectorValues").With(go.transform.Wrap).With(FitLayout<VerticalLayoutGroup>).With(vs =>
+            go.GetComponentInChildren<Slider>().With(ui =>
             {
-                vs.GetComponent<LayoutElement>().preferredWidth = 230;
-                new GameObject("x").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
-                    .NumericEdit("float(x):", () => get().x.ToString(), (x) => set(new(float.Parse(x), get().y, get().z, get().w)), TMP_InputField.ContentType.DecimalNumber);
-                new GameObject("y").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
-                    .NumericEdit("float(y):", () => get().y.ToString(), (y) => set(new(get().x, float.Parse(y), get().z, get().w)), TMP_InputField.ContentType.DecimalNumber);
-                new GameObject("z").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
-                    .NumericEdit("float(z):", () => get().z.ToString(), (z) => set(new(get().x, get().y, float.Parse(z), get().w)), TMP_InputField.ContentType.DecimalNumber);
-                new GameObject("w").With(vs.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>)
-                    .NumericEdit("float(w):", () => get().w.ToString(), (w) => set(new(get().x, get().y, get().z, float.Parse(w))), TMP_InputField.ContentType.DecimalNumber);
+                ui.value = get();
+                ui.minValue = range.x;
+                ui.maxValue = range.y;
+                ui.onValueChanged.AddListener(set);
             });
         }
-        internal static void TextureEdit(this GameObject go, Func<Texture> get, Action<Texture> set, bool state, Action<bool> toggle)
+        internal static void ColorEdit(this GameObject go, Func<Color> get, Action<Color> set)
         {
-            go.GetComponentInChildren<Toggle>().With(ui =>
+            go.GetComponentInChildren<ThumbnailColor>()
+                .Initialize(go.name, get, (Func<Color, bool>)(color => true.With(() => set(color))), true, true);
+        }
+        internal static void VectorEdit(this GameObject go, Func<Vector4> get, Action<Vector4> set)
+        {
+            new List<Tuple<Func<string>, Action<string>>>() {
+                new (() => get().x.ToString(), (x) => set(new(float.Parse(x), get().y, get().z, get().w))),
+                new (() => get().y.ToString(), (y) => set(new(get().x, float.Parse(y), get().z, get().w))),
+                new (() => get().z.ToString(), (z) => set(new(get().x, get().y, float.Parse(z), get().w))),
+                new (() => get().w.ToString(), (w) => set(new(get().x, get().y, get().z, float.Parse(w)))),
+            }.Zip(go.GetComponentsInChildren<TMP_InputField>()).Do(item =>
             {
-                ui.onValueChanged.AddListener(toggle);
-                ui.isOn = state;
+                item.Item2.SetText(item.Item1.Item1());
+                item.Item2.onSubmit.AddListener(item.Item1.Item2);
             });
-            new GameObject("TextureValues").With(go.transform.Wrap).With(FitLayout<VerticalLayoutGroup>).With(vt =>
+        }
+        internal static void TextureEdit(this GameObject go, Func<Texture> get, Action<Texture> set)
+        {
+            go.GetComponentsInChildren<TextMeshProUGUI>()[1].With(ui =>
             {
-                UnityEngine.Object.Instantiate(UIRef.Label, vt.transform).With(label =>
-                {
-                    label.AddComponent<LayoutElement>().preferredWidth = 200;
-                    label.GetComponent<TextMeshProUGUI>().With(ui =>
-                    {
-                        ui.overflowMode = TextOverflowModes.Ellipsis;
-                        ui.SetText(get()?.name ?? "");
-                    });
-                });
-                new GameObject("Buttons").With(vt.transform.Wrap).With(FitLayout<HorizontalLayoutGroup>).With(hr =>
-                {
-                    UnityEngine.Object.Instantiate(UIRef.Import, hr.transform).With(button =>
-                    {
-                        button.AddComponent<LayoutElement>().With(ui =>
-                        {
-                            ui.preferredWidth = 100;
-                            ui.preferredHeight = 30;
-                        });
-                        button.GetComponentsInChildren<TextMeshProUGUI>().Do(ui =>
-                        {
-                            ui.autoSizeTextContainer = true;
-                            ui.SetText("import");
-                        });
-                        button.GetComponent<Button>().With(ui =>
-                        {
-                            ui.onClick.AddListener(ImportTexture(get, set));
-                            ui.interactable = true;
-                        });
-                    });
-                    UnityEngine.Object.Instantiate(UIRef.Export, hr.transform).With(button =>
-                    {
-                        button.AddComponent<LayoutElement>().With(ui =>
-                        {
-                            ui.preferredWidth = 100;
-                            ui.preferredHeight = 30;
-                        });
-                        button.GetComponentsInChildren<TextMeshProUGUI>().Do(ui =>
-                        {
-                            ui.autoSizeTextContainer = true;
-                            ui.SetText("export");
-                        });
-                        button.GetComponent<Button>().With(ui =>
-                        {
-                            ui.onClick.AddListener(ExportTexture(get));
-                            ui.interactable = get() != null;
-                        });
-                    });
-                });
+                ui.SetText(get()?.name ?? "");
+                set += value => ui.SetText(value?.name ?? "");
+            });
+            go.GetComponentsInChildren<Button>()[0].onClick.AddListener(ImportTexture(get, set));
+            go.GetComponentsInChildren<Button>()[1].With(ui =>
+            {
+                ui.interactable = get() != null;
+                ui.onClick.AddListener(ExportTexture(get));
             });
         }
         internal static Action ImportTexture(Func<Texture> get, Action<Texture> set)
@@ -739,10 +791,9 @@ namespace SardineHead
                  (0, 4) => () => UpdateContent(Current.Eyes),
                  (0, 5) => () => UpdateContent(Current.Tooth),
                  (0, _) => () => UpdateContent(Current.Face),
-                 (1, 8) => () => UpdateContent(Current.Nails),
                  (1, _) => () => UpdateContent(Current.Body),
-                 (2, 0) => () => UpdateContent(Current.Hair(1)),
-                 (2, 1) => () => UpdateContent(Current.Hair(0)),
+                 (2, 0) => () => UpdateContent(Current.Hair(0)),
+                 (2, 1) => () => UpdateContent(Current.Hair(1)),
                  (2, 2) => () => UpdateContent(Current.Hair(2)),
                  (2, 3) => () => UpdateContent(Current.Hair(3)),
                  (3, _) => () => UpdateContent(Current.Clothes(index)),
@@ -844,7 +895,7 @@ namespace SardineHead
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanCloth.Clothes), nameof(HumanCloth.Clothes.SetShader))]
         internal static void HumanClothSetShaderPostfix(HumanCloth.Clothes __instance) =>
-            ((ChaListDefine.CategoryNo)__instance.infoClothes.Category switch
+            ((ChaListDefine.CategoryNo)(__instance?.infoClothes?.Category ?? 999) switch
             {
                 ChaListDefine.CategoryNo.co_top => 0,
                 ChaListDefine.CategoryNo.co_bot => 1,
@@ -873,8 +924,7 @@ namespace SardineHead
         internal static void CategorySelectionSetPostfix(CategorySelection __instance, int index) => UIFactory.UpdateContent(__instance._no, index);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(ThumbnailButton), nameof(ThumbnailButton.Open))]
-        [HarmonyPatch(typeof(ThumbnailButton), nameof(ThumbnailButton.OpenThumbnail), typeof(bool), typeof(CustomThumbnailSelectWindow.WindowEvent))]
+        [HarmonyPatch(typeof(ThumbnailButton), nameof(ThumbnailButton.Set))]
         internal static void ThumbnailButtonOpenPostfix() => UIFactory.ScheduleRefresh();
     }
     [BepInProcess(Process)]
@@ -886,12 +936,12 @@ namespace SardineHead
         public const string Process = "SamabakeScramble";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "0.8.0";
+        public const string Version = "1.0.0";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
                 .With(() => Instance = this)
-                .With(() => Log.LogInfo(ChaFileDefine.AccessorySlotNum))
+                .With(UIRef.Initialize)
                 .With(UIFactory.Initialize)
                 .With(ModificationExtension.Initialize)
                 .With(TextureExtension.Initialize)
