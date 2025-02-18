@@ -102,18 +102,18 @@ namespace SardineHead
                     Value.shader.GetPropertyType(idx),
                     () => Value.shader.GetPropertyRangeLimits(idx)));
         private Action<bool> IntToggle(int id, string name) =>
-            Toggle(name, SetInts, () => Value.GetInt(id), value => Mods[Label].IntValues[name] = value);
+            Toggle(name, SetInts, () => Value.GetInt(id), value => Mods[Label].IntValues[name] = value, () => Mods[Label].IntValues.Remove(name));
         private Action<bool> FloatToggle(int id, string name) =>
-            Toggle(name, SetFloats, () => Value.GetFloat(id), value => Mods[Label].FloatValues[name] = value);
+            Toggle(name, SetFloats, () => Value.GetFloat(id), value => Mods[Label].FloatValues[name] = value, () => Mods[Label].FloatValues.Remove(name));
         private Action<bool> ColorToggle(int id, string name) =>
-            Toggle(name, SetColors, () => Value.GetColor(id), value => Mods[Label].ColorValues[name] = value);
+            Toggle(name, SetColors, () => Value.GetColor(id), value => Mods[Label].ColorValues[name] = value, () => Mods[Label].ColorValues.Remove(name));
         private Action<bool> VectorToggle(int id, string name) =>
-            Toggle(name, SetVectors, () => Value.GetVector(id), value => Mods[Label].VectorValues[name] = value);
+            Toggle(name, SetVectors, () => Value.GetVector(id), value => Mods[Label].VectorValues[name] = value, () => Mods[Label].VectorValues.Remove(name));
         private Action<bool> TextureToggle(int id, string name) =>
             Toggle(name, SetTextures, () => Value.GetTexture(id), value => value.IsExtension()
-                .Either(() => Mods[Label].TextureHashes.Remove(name), () => Mods[Label].TextureHashes[name] = value.name));
-        private Action<bool> Toggle<T>(string name, Dictionary<string, Action<T>> actions, Func<T> get, Action<T> set) =>
-            value => value.Either(() => actions[name] -= set, () => actions[name] += set.With(() => set(get())));
+                .Either(() => Mods[Label].TextureHashes.Remove(name), () => Mods[Label].TextureHashes[name] = value.name), () => Mods[Label].TextureHashes.Remove(name));
+        private Action<bool> Toggle<T>(string name, Dictionary<string, Action<T>> actions, Func<T> get, Action<T> set, Action unset) =>
+            value => value.Either(() => actions[name] -= set.With(unset), () => actions[name] += set.With(() => set(get())));
         private bool PopulateHandles(string name, int id, ShaderPropertyType shaderType, Func<Vector2> limits) =>
             shaderType switch
             {
@@ -213,7 +213,7 @@ namespace SardineHead
         internal static IEnumerable<MaterialHandle> ToEyebrowsHandles(this HumanFace face, CharacterModifications mods) =>
             mods.Eyebrows.ToHandles(face?.rendEyebrow);
         internal static IEnumerable<MaterialHandle> ToEyelinesHandles(this HumanFace face, CharacterModifications mods) =>
-            mods.Eyelines.ToHandles(face?.rendEyelid, face?.rendEyeline);
+            mods.Eyelines.ToHandles(face?.rendEyelid, face?.rendEyeline, face?.rendEyelineUp, face?.rendEyelineDown);
         internal static IEnumerable<MaterialHandle> ToEyesHandles(this HumanFace face, CharacterModifications mods) =>
             mods.Eyes.ToHandles(face?.rendEye);
         internal static IEnumerable<MaterialHandle> ToToothHandles(this HumanFace face, CharacterModifications mods) =>
@@ -673,7 +673,7 @@ namespace SardineHead
             go.GetComponentInChildren<TMP_InputField>().With(ui =>
             {
                 ui.SetText(get().ToString());
-                ui.onSubmit.AddListener((Action<string>)(value => set(int.Parse(value))));
+                ui.onValueChanged.AddListener((Action<string>)(value => set(int.TryParse(value, out int result) ? result : 0)));
             });
         }
         internal static void FloatEdit(this GameObject go, Func<float> get, Action<float> set)
@@ -681,7 +681,7 @@ namespace SardineHead
             go.GetComponentInChildren<TMP_InputField>().With(ui =>
             {
                 ui.SetText(get().ToString());
-                ui.onSubmit.AddListener((Action<string>)(value => set(float.Parse(value))));
+                ui.onValueChanged.AddListener((Action<string>)(value => set(float.TryParse(value, out float result) ? result : 0.0f)));
             });
         }
         internal static void RangeEdit(this GameObject go, Func<float> get, Action<float> set, Vector2 range)
@@ -912,12 +912,9 @@ namespace SardineHead
                     .Do(handle => handle.Apply())));
         [HarmonyPostfix]
         [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanAccessory.Accessory), nameof(HumanAccessory.Accessory.CreateMove))]
-        internal static void AccessoryCreateMovePostfix(HumanAccessory.Accessory __instance, GameObject obj) =>
-            obj.name.StartsWith("ca_slot").Maybe(() => UniTask.NextFrame().ContinueWith((Action)(() =>
-                obj.GetComponentInParent<HumanComponent>()
-                    .Human.Coordinate().Accessory[int.Parse(obj.name[7..])].ToHandles(__instance?.renderers)
-                    .Do(handle => handle.Apply()))));
+        [HarmonyPatch(typeof(HumanAccessory), nameof(HumanAccessory.SetupAccessoryFK), typeof(int))]
+        internal static void HumanAccessorySetupAccessoryFKPostfix(HumanAccessory __instance, int slotNo) =>
+            __instance.human.Coordinate().Accessory[slotNo].ToHandles(__instance?.accessories[slotNo].renderers).Do(handle => handle.Apply());
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(CategorySelection), nameof(CategorySelection.OpenView), typeof(int))]
@@ -936,7 +933,7 @@ namespace SardineHead
         public const string Process = "SamabakeScramble";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.0.0";
+        public const string Version = "1.0.1";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
