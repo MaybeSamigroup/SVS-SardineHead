@@ -205,25 +205,22 @@ namespace SardineHead
         internal static IEnumerable<MaterialHandle> ToHandles(this Mods mods, params Renderer[] renderers) =>
             (renderers ?? []).Where(renderer => renderer != null).Distinct()
                 .Select(renderer => new MaterialHandle(renderer.material, renderer.name ?? renderer.gameObject.name, mods));
-        internal static IEnumerable<MaterialHandle> ToHandles(this HumanFace face, CharacterModifications mods) =>
-            [..face.ToFaceHandles(mods), .. face.ToEyebrowsHandles(mods),
-             ..face.ToEyelinesHandles(mods), ..face.ToEyesHandles(mods), ..face.ToToothHandles(mods)];
-        internal static IEnumerable<MaterialHandle> ToFaceHandles(this HumanFace face, CharacterModifications mods) =>
-            mods.Face.ToHandles(face?.rendFace);
-        internal static IEnumerable<MaterialHandle> ToEyebrowsHandles(this HumanFace face, CharacterModifications mods) =>
-            mods.Eyebrows.ToHandles(face?.rendEyebrow);
-        internal static IEnumerable<MaterialHandle> ToEyelinesHandles(this HumanFace face, CharacterModifications mods) =>
-            mods.Eyelines.ToHandles(face?.rendEyelid, face?.rendEyeline, face?.rendEyelineUp, face?.rendEyelineDown);
-        internal static IEnumerable<MaterialHandle> ToEyesHandles(this HumanFace face, CharacterModifications mods) =>
-            mods.Eyes.ToHandles(face?.rendEye);
-        internal static IEnumerable<MaterialHandle> ToToothHandles(this HumanFace face, CharacterModifications mods) =>
-            mods.Tooth.ToHandles(face?.rendTooth, face?.rendDoubleTooth, face?.rendTongueFace);
-        internal static IEnumerable<MaterialHandle> ToHandles(this HumanBody body, CharacterModifications mods) =>
-            [.. body.ToBodyHandles(mods), .. body.ToNailsHandles(mods)];
-        internal static IEnumerable<MaterialHandle> ToBodyHandles(this HumanBody body, CharacterModifications mods) =>
-            mods.Body.ToHandles(body?.rendBody);
-        internal static IEnumerable<MaterialHandle> ToNailsHandles(this HumanBody body, CharacterModifications mods) =>
-            mods.Nails.ToHandles([.. body?.hand?.nailObject?.obj?.ToRenderers() ?? [], .. body?.leg?.nailObject?.obj?.ToRenderers() ?? []]);
+        internal static Dictionary<Mods, IEnumerable<MaterialHandle>> ToHandles(this HumanFace face, CharacterModifications mods) =>
+            face.objHead.ToRenderers().GroupBy(item =>
+                item.name.Contains("mayuge") ? mods.Eyebrows : 
+                item.name.Contains("eye") ? mods.Eyelines :
+                item.name.Contains("hitomi") ? mods.Eyes :
+                item.name.Contains("namida") ? mods.Eyes :
+                item.name.Contains("tooth") ? mods.Tooth :
+                item.name.Contains("tango") ? mods.Tooth :
+                item.name.Contains("canine") ? mods.Tooth : mods.Face,
+                (mods, rnds) => new Tuple<Mods, IEnumerable<MaterialHandle>>(mods, mods.ToHandles([..rnds])))
+                .ToDictionary(item => item.Item1, item => item.Item2);
+        internal static Dictionary<Mods, IEnumerable<MaterialHandle>> ToHandles(this HumanBody body, CharacterModifications mods) =>
+            body.objBody.ToRenderers().GroupBy(item =>
+                item.name.Contains("nail") ? mods.Nails : mods.Body,
+                (mods, rnds) => new Tuple<Mods, IEnumerable<MaterialHandle>>(mods, mods.ToHandles([..rnds])))
+                .ToDictionary(item => item.Item1, item => item.Item2);
         private static Dictionary<int, Tuple<int, int>> LastHairIds = new();
         private static Dictionary<int, Tuple<int, int>> LastClothesIds = new();
         private static Dictionary<int, Tuple<int, int>> LastAccessoryIds = new();
@@ -253,8 +250,8 @@ namespace SardineHead
         internal static IEnumerable<MaterialHandle> ToHandles(this HumanAccessory.Accessory acs, Mods mods) =>
             mods.ToHandles([.. acs?.cusAcsCmp?.gameObject?.ToRenderers() ?? []]);
         internal static IEnumerable<MaterialHandle> ToHandles(this Human human, CharacterModifications mods) =>
-            human.body.ToCtcHandles(mods).Concat(human.body.ToHandles(mods))
-                .Concat(human.face.ToCtcHandles(mods)).Concat(human.face.ToHandles(mods))
+            human.body.ToCtcHandles(mods).Concat(human.body.ToHandles(mods).SelectMany(item => item.Value))
+                .Concat(human.face.ToCtcHandles(mods)).Concat(human.face.ToHandles(mods).SelectMany(item => item.Value))
                 .Concat(Enumerable.Range(0, 4)
                     .SelectMany(index => human?.hair?.hairs[index]?.ToHandles(human.Coordinate().Hair[index]) ?? []))
                 .Concat(Enumerable.Range(0, 8)
@@ -270,12 +267,12 @@ namespace SardineHead
         internal Human Target { get; init; }
         internal CharacterModifications Mods { get; init; }
         internal CoordinateModifications Coordinate => Mods.Coordinates[Target.data.Status.coordinateType];
-        internal IEnumerable<MaterialHandle> Face => Target.face.ToCtcHandles(Mods).Concat(Target.face.ToFaceHandles(Mods));
-        internal IEnumerable<MaterialHandle> Eyebrows => Target.face.ToEyebrowsHandles(Mods);
-        internal IEnumerable<MaterialHandle> Eyelines => Target.face.ToEyelinesHandles(Mods);
-        internal IEnumerable<MaterialHandle> Eyes => Target.face.ToEyesHandles(Mods);
-        internal IEnumerable<MaterialHandle> Tooth => Target.face.ToToothHandles(Mods);
-        internal IEnumerable<MaterialHandle> Body => Target.body.ToCtcHandles(Mods).Concat(Target.body.ToHandles(Mods));
+        internal IEnumerable<MaterialHandle> Face => Target.face.ToCtcHandles(Mods).Concat(Target.face.ToHandles(Mods)[Mods.Face]);
+        internal IEnumerable<MaterialHandle> Eyebrows => Target.face.ToHandles(Mods)[Mods.Eyebrows];
+        internal IEnumerable<MaterialHandle> Eyelines => Target.face.ToHandles(Mods)[Mods.Eyelines];
+        internal IEnumerable<MaterialHandle> Eyes => Target.face.ToHandles(Mods)[Mods.Eyes];
+        internal IEnumerable<MaterialHandle> Tooth => Target.face.ToHandles(Mods)[Mods.Tooth];
+        internal IEnumerable<MaterialHandle> Body => Target.body.ToCtcHandles(Mods).Concat(Target.body.ToHandles(Mods).SelectMany(item => item.Value));
         internal IEnumerable<MaterialHandle> Hair(int index) => Target.hair.ToHandles(Coordinate, index);
         internal IEnumerable<MaterialHandle> Clothes(int index) => Target.cloth.ToHandles(Coordinate, index);
         internal IEnumerable<MaterialHandle> Accessory(int index) => Target.acs.ToHandles(Coordinate, index);
@@ -872,8 +869,8 @@ namespace SardineHead
             __instance._trfParent.GetComponent<HumanComponent>().Human.With(human =>
                 ((__instance._matCreate.name.Contains("body_create"), __instance._matCreate.name.Contains("head_create")) switch
                 {
-                    (true, false) => human.body.ToHandles(human.Modifications()),
-                    (false, true) => human.face.ToHandles(human.Modifications()),
+                    (true, false) => human.body.ToHandles(human.Modifications()).SelectMany(item => item.Value),
+                    (false, true) => human.face.ToHandles(human.Modifications()).SelectMany(item => item.Value),
                     _ => []
                 }).Do(handle => handle.Apply()));
         [HarmonyPostfix]
