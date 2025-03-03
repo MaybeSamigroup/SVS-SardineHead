@@ -4,7 +4,7 @@ Runtime texture and material modifier tool for SamabakeScramble character creati
 
 Some character state dependant properties like sweat, wet, liquid may be overriden by this mod, modify them with caution.
 
-# Prerequests
+# Prerequisites
 
  * [BepInEx](https://github.com/BepInEx/BepInEx)
    * v6.0.0 be 725 or later
@@ -36,4 +36,9 @@ Start character creation and edit face, body, hair, clothes and accessories; you
 
 To show / hide the ui, you can use keyboard shortcut.
 
-Ctrl + s is mapped as default and can be configured through plugin setting. 
+Ctrl + s is mapped as default and can be configured through plugin setting.
+
+To save your modifications, you have to check desired property.
+
+![image](https://github.com/user-attachments/assets/dd293f84-5278-4c7b-b6a5-39756946f56d)
+
