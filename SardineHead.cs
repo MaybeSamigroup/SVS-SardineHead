@@ -930,7 +930,7 @@ namespace SardineHead
         public const string Process = "SamabakeScramble";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.0.3";
+        public const string Version = "1.0.4";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
@@ -957,7 +957,7 @@ namespace SardineHead
         private void ListenOnCoordinateInitialize() =>
             Event.OnCoordinateInitialize += (index, archive) => archive.Deserialize(index);
         private void ListenOnCoordinateDeserialize() =>
-            Event.OnCoordinateDeserialize += (human, limits, archive) => archive.DeserializeCoordinate(human, limits);
+            Event.OnCoordinateDeserialize += (human, coord, limits, archive) => archive.DeserializeCoordinate(human, limits);
         private void ListenOnActorSerialize() =>
             Event.OnActorSerialize += (index, archive) => archive.Serialize(index);
         private void ListenOnActorDeserialize() =>
