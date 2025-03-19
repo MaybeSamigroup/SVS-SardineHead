@@ -930,7 +930,7 @@ namespace SardineHead
         public const string Process = "SamabakeScramble";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.0.4";
+        public const string Version = "1.0.5";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
@@ -949,19 +949,19 @@ namespace SardineHead
                 .With(ConfigToggle)
                 .With(ConfigStatus);
         private void ListenOnCharacterCreationSerialize() =>
-            Event.OnCharacterCreationSerialize += (archive) => archive.Serialize();
+            Event.OnCharacterCreationSerialize += (data, archive) => archive.Serialize();
         private void ListenOnCharacterCreationDeserialize() =>
             Event.OnCharacterCreationDeserialize += (_, limit, archive) => archive.Deserialize(limit);
         private void ListenOnCoordinateSerialize() =>
-            Event.OnCoordinateSerialize += (archive) => archive.SerializeCoordinate();
+            Event.OnCoordinateSerialize += (data, archive) => archive.SerializeCoordinate();
         private void ListenOnCoordinateInitialize() =>
-            Event.OnCoordinateInitialize += (index, archive) => archive.Deserialize(index);
+            Event.OnCoordinateInitialize += (index, data, archive) => archive.Deserialize(index);
         private void ListenOnCoordinateDeserialize() =>
             Event.OnCoordinateDeserialize += (human, coord, limits, archive) => archive.DeserializeCoordinate(human, limits);
         private void ListenOnActorSerialize() =>
-            Event.OnActorSerialize += (index, archive) => archive.Serialize(index);
+            Event.OnActorSerialize += (index, data, archive) => archive.Serialize(index);
         private void ListenOnActorDeserialize() =>
-            Event.OnActorDeserialize += (index, archive) => archive.Deserialize(index);
+            Event.OnActorDeserialize += (index, data, archive) => archive.Deserialize(index);
         private void ConfigToggle() => UIFactory.Toggle = Config
             .Bind("General", "Sardin Head toggle key", new KeyboardShortcut(KeyCode.S, KeyCode.LeftControl));
         private void ConfigStatus() => UIFactory.Status = Config
