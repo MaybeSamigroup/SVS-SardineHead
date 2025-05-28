@@ -1,44 +1,51 @@
 # SVS-SardineHead
 
-Runtime texture and material modifier tool for SamabakeScramble character creation
+Runtime texture and material modifier tool for SamabakeScramble and modification loader for DigitalCraft.
 
-Some character state dependant properties like sweat, wet, liquid may be overriden by this mod, modify them with caution.
+## Prerequisites
 
-# Prerequisites
+- [SVS-HF_Patch](https://github.com/BepInEx/BepInEx)
+  - Message Center
+  - BepInEx.ConfigurationManager
+  - SVS_BepisPlugins
+- [Fishbone](https://github.com/MaybeSamigroup/SVS-Fishbone)
+  - 2.0.0 or later
 
- * [BepInEx](https://github.com/BepInEx/BepInEx)
-   * v6.0.0 be 725 or later
- * [ByteFiddler](https://github.com/BepInEx/BepInEx)
-   * v1.0 or later and suitable configuration
- * [BepInEx.ConfigurationManager](https://github.com/BepInEx/BepInEx.ConfigurationManager)
-   * v18.3 or later
- * [Fishbone](https://github.com/MaybeSamigroup/SVS-Fishbone)
-   * 1.2.0 or later
+Confirmed working under SamabakeScramble 1.1.6 and DigitalCraft 2.1.0
 
-Confirmed working under SVS 1.1.4/1.1.3 + [SVS-HF Patch](https://github.com/ManlyMarco/SVS-HF_Patch) 1.5/1.6 environment.
+## Installation
 
-# Installation
+Extract the release to your game install directory.
 
-Extract the release to game root.
+## Migration from older releases
 
-# Upgrade
+Remove SardineHead.dll from BepinEx/plugins.
+
+Plugin assembly names are now SVS_SardineHead.dll and DC_SardineHead.dll.
 
 These directories contained in previous releases are no longer used.
 Please delete it.
 
- * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/chara
- * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/default
- * (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/textures
+- (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/chara
+- (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/default
+- (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/textures
 
-# How to use
+## How to use
 
-Start character creation and edit face, body, hair, clothes and accessories; you'll see additional UI.
-
-To show / hide the ui, you can use keyboard shortcut.
+Start character creation and use keyboard shortcut to show / hide the ui.
 
 Ctrl + s is mapped as default and can be configured through plugin setting.
 
 To save your modifications, you have to check desired property.
 
-![image](https://github.com/user-attachments/assets/dd293f84-5278-4c7b-b6a5-39756946f56d)
+## Know issue
 
+Material selection menu toggles funny,
+
+exclusive selection is intended but under unknown condition, multiple selection can made.
+
+To edit integer/float/vector input field, you should check it for saving,
+
+or actual material values are reflected in short period and can't modify.
+
+Currently, modification ui is available in SVS Character Creation only.

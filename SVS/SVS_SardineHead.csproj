@@ -1,14 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net6</TargetFramework>
-        <AssemblyName>SardineHead</AssemblyName>
+        <AssemblyName>SVS_SardineHead</AssemblyName>
         <Description>runtime texture and material modifier tool for SamabakeScramble Character Creation</Description>
-        <Version>1.0.5</Version>
+        <Version>1.1.5</Version>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <GamePath>$([MSBuild]::GetRegistryValue('HKEY_CURRENT_USER\Software\ILLGAMES\SamabakeScramble','INSTALLDIR'))</GamePath>
+		<GameName>SamabakeScramble</GameName>
+        <GamePath>$([MSBuild]::GetRegistryValue('HKEY_CURRENT_USER\Software\ILLGAMES\$(GameName)','INSTALLDIR'))</GamePath>
     </PropertyGroup>
 	<ItemGroup>
+		<Compile Include="..\SardineHead.cs"/>
 		<Reference Include="0Harmony">
 			<HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath>
 			<Private>False</Private>
@@ -26,47 +28,47 @@
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="Il2Cppmscorlib">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\Il2Cppmscorlib.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\Il2Cppmscorlib.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UnityEngine.CoreModule">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\UnityEngine.CoreModule.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UnityEngine.CoreModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UnityEngine.UIModule">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\UnityEngine.UIModule.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UnityEngine.UIModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UnityEngine.UI">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\UnityEngine.UI.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UnityEngine.UI.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UnityEngine.TextRenderingModule">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\UnityEngine.TextRenderingModule.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UnityEngine.TextRenderingModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UnityEngine.ImageConversionModule">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\UnityEngine.ImageConversionModule.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UnityEngine.ImageConversionModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="Unity.TextMeshPro">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\Unity.TextMeshPro.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\Unity.TextMeshPro.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UniRx">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\UniRx.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UniRx.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UniTask">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\UniTask.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UniTask.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="Assembly-CSharp">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\Assembly-CSharp.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\Assembly-CSharp.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="IL">
-			<HintPath>$(GamePath)\BepInEx\SamabakeScramble\interop\IL.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\IL.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="System.Windows.Forms">
@@ -78,7 +80,7 @@
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="Fishbone">
-			<HintPath>$(GamePath)\BepInEx\plugins\Fishbone.dll</HintPath>
+			<HintPath>$(GamePath)\BepInEx\plugins\SVS_Fishbone.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
@@ -87,6 +89,6 @@
 	</Target>
 	<Target Name="Release" AfterTargets="Build">
 		<Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="GameRoot\BepinEx\plugins"/>
-		<ZipDirectory SourceDirectory="GameRoot" Overwrite="true" DestinationFile="release.zip"/>
+		<ZipDirectory SourceDirectory="GameRoot" Overwrite="true" DestinationFile="$(GameName).zip"/>
 	</Target>
 </Project>
