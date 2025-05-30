@@ -11,7 +11,7 @@ namespace SardineHead
     partial class ModApplicator
     {
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
-            new ModApplicator(human.data, archive.LoadChara().Transform(type.With(() => Plugin.Instance.Log.LogInfo(type))));
+            new ModApplicator(human.data, archive.LoadChara().Transform(type));
         static void OnPreCharacterDeserialize(HumanData data, ZipArchive archive) =>
             new ModApplicator(data, data.Transform(archive.LoadTextures().LoadChara()));
         static void OnPreCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
@@ -42,7 +42,7 @@ namespace SardineHead
         public const string Process = "DigitalCraft";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.1.5";
+        public const string Version = "1.1.6";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")

@@ -3,7 +3,7 @@
         <TargetFramework>net6</TargetFramework>
         <AssemblyName>SVS_SardineHead</AssemblyName>
         <Description>runtime texture and material modifier tool for SamabakeScramble Character Creation</Description>
-        <Version>1.1.5</Version>
+        <Version>1.1.6</Version>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GameName>SamabakeScramble</GameName>

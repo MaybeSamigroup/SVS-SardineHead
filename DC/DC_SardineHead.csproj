@@ -3,7 +3,7 @@
         <TargetFramework>net6</TargetFramework>
         <AssemblyName>DC_SardineHead</AssemblyName>
         <Description>runtime texture and material modifier tool for DigitalCraft</Description>
-        <Version>1.1.5</Version>
+        <Version>1.1.6</Version>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GameName>DigitalCraft</GameName>

@@ -111,7 +111,9 @@ namespace SardineHead
                             (ContentSizeFitter.FitMode.PreferredSize, ContentSizeFitter.FitMode.PreferredSize));
                 });
         static void Resize(float width, float height, GameObject go) =>
-            go.GetComponent<RectTransform>().With(ui => (ui.anchorMin, ui.anchorMax, ui.sizeDelta) = (new(0, 1), new(0, 1), new(width, height)));
+            go.GetComponent<RectTransform>().With(ui =>
+                 (ui.anchorMin, ui.anchorMax, ui.sizeDelta) =
+                 (new(0, 1), new(0, 1), new(width, height)));
         static void EnableLayout(float width, float height, GameObject go) =>
             go.AddComponent<LayoutElement>().With(ui => (ui.preferredWidth, ui.preferredHeight) = (width, height));
         static void ResizeScrollbar(Transform tf) => tf.Find("Scrollbar Vertical").gameObject.With(go =>
@@ -148,6 +150,7 @@ namespace SardineHead
         internal static Action<GameObject> Configure<T>(Action<T> action) where T : Component => go => go.GetComponent<T>().With(action);
         internal static void FitLayout<T>(this GameObject go) where T : HorizontalOrVerticalLayoutGroup
         {
+            go.AddComponent<RectTransform>().localScale = new(1, 1);
             go.AddComponent<LayoutElement>();
             go.AddComponent<T>().With(ui =>
             {
@@ -502,9 +505,9 @@ namespace SardineHead
             (Wrapper, Toggle, Panel) = (wrapper, toggle, panel);
         internal EditView(string name, MaterialWrapper wrapper, GameObject toggle, Transform parent) :
             this(wrapper, toggle, new GameObject(name)
+                .With(parent.Wrap).With(UI.Inactive)
                 .With(UI.FitLayout<VerticalLayoutGroup>)
-                .With(UI.Configure<VerticalLayoutGroup>(ui => ui.childAlignment = TextAnchor.UpperLeft))
-                .With(UI.Inactive).With(parent.Wrap)) =>
+                .With(UI.Configure<VerticalLayoutGroup>(ui => ui.childAlignment = TextAnchor.UpperLeft))) =>
             Edits = RendererEdits().Concat(Wrapper.Properties.Select(entry => (CommonEdit)(entry.Value switch
             {
                 ShaderPropertyType.Int => new IntEdit(entry.Key, Panel.transform, Wrapper),
@@ -524,7 +527,7 @@ namespace SardineHead
         internal void Store(Dictionary<string, Modifications> mods) =>
             mods[Panel.name] = new Modifications().With(Store);
         internal void Apply(Dictionary<string, Modifications> mods) =>
-            mods.TryGetValue(Panel.name, out var mod).Maybe(mod.Curry(Apply));
+            Apply(mods.GetValueOrDefault(Panel.name, new Modifications()));
         internal void Update() =>
             Panel.active.Maybe(() => Edits.Do(edit => edit.Update()));
         internal void Dispose()
@@ -602,9 +605,9 @@ namespace SardineHead
         {
             FaceGroup.Apply(mods.Face);
             BodyGroup.Apply(mods.Body);
-            mods.Hairs.Do(entry => HairGroups.TryGetValue(entry.Key, out var group).Maybe(() => group.Apply(entry.Value)));
-            mods.Clothes.Do(entry => ClothesGroups.TryGetValue(entry.Key, out var group).Maybe(() => group.Apply(entry.Value)));
-            mods.Accessories.Do(entry => AccessoryGroups.TryGetValue(entry.Key, out var group).Maybe(() => group.Apply(entry.Value)));
+            HairGroups.Do(entry => entry.Value.Apply(mods.Hairs.GetValueOrDefault(entry.Key, new())));
+            ClothesGroups.Do(entry => entry.Value.Apply(mods.Clothes.GetValueOrDefault(entry.Key, new())));
+            AccessoryGroups.Do(entry => entry.Value.Apply(mods.Accessories.GetValueOrDefault(entry.Key, new())));
         }
         CoordMods Store() => new()
         {
@@ -721,7 +724,7 @@ namespace SardineHead
         public const string Process = "SamabakeScramble";
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.1.5";
+        public const string Version = "1.1.6";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
