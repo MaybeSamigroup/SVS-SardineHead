@@ -1,4 +1,6 @@
 using HarmonyLib;
+using BepInEx;
+using BepInEx.Unity.IL2CPP;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -611,5 +613,11 @@ namespace SardineHead
         [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.CreateClothesTexture))]
         internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance, int kind) =>
             OnClothesReady(__instance, kind);
+    }
+    public partial class Plugin : BasePlugin
+    {
+        internal static Plugin Instance;
+        public const string Name = "SardineHead";
+        public const string Version = "1.1.6";
     }
 }

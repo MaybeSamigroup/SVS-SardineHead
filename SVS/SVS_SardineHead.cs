@@ -718,13 +718,10 @@ namespace SardineHead
     [BepInProcess(Process)]
     [BepInDependency(Fishbone.Plugin.Guid)]
     [BepInPlugin(Guid, Name, Version)]
-    public class Plugin : BasePlugin
+    public partial class Plugin : BasePlugin
     {
-        internal static Plugin Instance;
         public const string Process = "SamabakeScramble";
-        public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.1.6";
         private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
