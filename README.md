@@ -9,7 +9,7 @@ Runtime texture and material modifier tool for SamabakeScramble and modification
   - BepInEx.ConfigurationManager
   - SVS_BepisPlugins
 - [Fishbone](https://github.com/MaybeSamigroup/SVS-Fishbone)
-  - 2.0.1 or later
+  - 2.0.2 or later
 
 Confirmed working under SamabakeScramble 1.1.6 and DigitalCraft 2.1.0
 
@@ -49,3 +49,5 @@ To edit integer/float/vector input field, you should check it for saving,
 or actual material values are reflected in short period and can't modify.
 
 Currently, modification ui is available in SVS Character Creation only.
+
+Currently, conflict with [HC_FXsettings](https://github.com/TonWonton/HC_FXsettings/tree/DigitalCraft) in DC, will crash on character or scene load if both plugins loaded.

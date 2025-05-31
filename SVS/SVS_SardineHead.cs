@@ -280,11 +280,11 @@ namespace SardineHead
                 (true, false) => BoolValue.Disabled
             };
         internal override void Apply(Modifications mod) =>
-            (Check, Value.isOn) = mod.Rendering switch
+            (Check, Wrapper.Renderer.enabled) = mod.Rendering switch
             {
-                BoolValue.Enabled => (true, true),
-                BoolValue.Disabled => (true, false),
-                _ => (false, Wrapper.Renderer.enabled)
+                BoolValue.Enabled => (true, true.With(Value.SetIsOnWithoutNotify)),
+                BoolValue.Disabled => (true, false.With(Value.SetIsOnWithoutNotify)),
+                _ => (false, true.With(Value.SetIsOnWithoutNotify))
             };
         internal override void Update() =>
             Label.SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
