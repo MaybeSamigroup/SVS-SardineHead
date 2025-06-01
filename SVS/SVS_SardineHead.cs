@@ -7,7 +7,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering;
@@ -67,20 +66,25 @@ namespace SardineHead
                 go.AddComponent<GraphicRaycaster>();
                 go.AddComponent<ObservableUpdateTrigger>();
             });
+        internal static ConfigEntry<float> AnchorX;
+        internal static ConfigEntry<float> AnchorY;
+        static Action<Unit> UpdateAnchorPosition(RectTransform ui) =>
+            _ => (AnchorX.Value, AnchorY.Value) = (ui.anchoredPosition.x, ui.anchoredPosition.y);
         internal static GameObject Window =>
             UnityEngine.Object.Instantiate(ReferenceWindow, Canvas.transform).With(go =>
             {
                 UnityEngine.Object.Destroy(go.transform.Find("Category").gameObject);
                 UnityEngine.Object.Destroy(go.transform.Find("TabBG").gameObject);
                 UnityEngine.Object.Destroy(go.transform.Find("EditWindow").gameObject);
+                go.GetComponentInParent<ObservableUpdateTrigger>().UpdateAsObservable().Subscribe(UpdateAnchorPosition(
                 go.GetComponent<RectTransform>().With(ui =>
                 {
                     ui.anchorMin = new(0.0f, 1.0f);
                     ui.anchorMax = new(0.0f, 1.0f);
                     ui.pivot = new(0.0f, 1.0f);
-                    ui.anchoredPosition = new(1000, -120);
                     ui.sizeDelta = new(800, 800);
-                });
+                    ui.anchoredPosition = new(AnchorX.Value, AnchorY.Value);
+                })));
                 go.GetComponentInChildren<TextMeshProUGUI>().SetText(Plugin.Name);
                 go.AddComponent<UI_DragWindow>();
             });
@@ -286,8 +290,14 @@ namespace SardineHead
                 BoolValue.Disabled => (true, false.With(Value.SetIsOnWithoutNotify)),
                 _ => (false, true.With(Value.SetIsOnWithoutNotify))
             };
+        void UpdateGet() =>
+            Value.SetIsOnWithoutNotify(Wrapper.Renderer.enabled);
+        void UpdateSet() =>
+            Wrapper.Renderer.enabled = Value.isOn;
+        void UpdateValue() =>
+            Check.Either(UpdateGet, UpdateSet);
         internal override void Update() =>
-            Label.SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
+            Label.With(UpdateValue).SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
     }
     internal class IntEdit : CommonEdit
     {
@@ -640,7 +650,9 @@ namespace SardineHead
         internal static EditWindow Instance;
         internal static void Initialize()
         {
-            Status = Plugin.Instance.Config.Bind("General", "show Sardin Head (smells fishy)", false);
+            UI.AnchorX = Plugin.Instance.Config.Bind("General", "Window AnchorX", 30.0f);
+            UI.AnchorY = Plugin.Instance.Config.Bind("General", "Window AnchorY", -80.0f);
+            Status = Plugin.Instance.Config.Bind("General", "Show Sardin Head (smells fishy)", false);
             Toggle = Plugin.Instance.Config.Bind("General", "Sardin Head toggle key", new KeyboardShortcut(KeyCode.S, KeyCode.LeftControl));
             Util.Hook<HumanCustom>(() =>
             {
