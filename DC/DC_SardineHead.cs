@@ -18,11 +18,11 @@ namespace SardineHead
             new ModApplicator(human.data, human.Transform(limits.Merge(human,
                 archive.LoadTextures().LoadCoord(), storage.LoadChara()).With(storage.Save)));
         static void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(() => applicator.Cleanup(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         static void OnPostCharacterDeserialize(Human human, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(() => applicator.Cleanup(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         static void OnPostCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(() => applicator.Cleanup(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         internal static void Initialize()
         {
             Event.OnPreCoordinateReload += OnPreCoordinateReload;

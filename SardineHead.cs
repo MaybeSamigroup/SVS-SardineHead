@@ -239,18 +239,18 @@ namespace SardineHead
             item.Wrap()?.Apply(mods.Body);
         internal static void Apply(this HumanFace item, CoordMods mods) =>
             item.Wrap()?.Apply(mods.Face);
-        internal static void Apply(this HumanHair.Hair item, int index, CoordMods mods) =>
-            mods.Hairs.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
-        internal static void Apply(this HumanCloth.Clothes item, int index, CoordMods mods) =>
-            mods.Clothes.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
-        internal static void Apply(this HumanAccessory.Accessory item, int index, CoordMods mods) =>
-            mods.Accessories.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
+        static Action<HumanHair.Hair, int, CoordMods> ApplyHair =>
+            (item, index, mods) => mods.Hairs.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
+        static Action<HumanCloth.Clothes, int, CoordMods> ApplyClothes =>
+            (item, index, mods) => mods.Clothes.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
+        static Action<HumanAccessory.Accessory, int, CoordMods> ApplyAccessory =>
+            (item, index, mods) => mods.Accessories.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
         internal static void Apply(this HumanHair item, CoordMods mods) =>
-            item.hairs.Select((child, index) => index.Curry(mods, child.Apply)).Do(action => action());
+            item.hairs.Select((child, index) => ApplyHair.Apply(child).Apply(index).Apply(mods)).Do(action => action());
         internal static void Apply(this HumanCloth item, CoordMods mods) =>
-            item.clothess.Select((child, index) => index.Curry(mods, child.Apply)).Do(action => action());
+            item.clothess.Select((child, index) => ApplyClothes.Apply(child).Apply(index).Apply(mods)).Do(action => action());
         internal static void Apply(this HumanAccessory item, CoordMods mods) =>
-            item.accessories.Select((child, index) => index.Curry(mods, child.Apply)).Do(action => action());
+            item.accessories.Select((child, index) => ApplyAccessory.Apply(child).Apply(index).Apply(mods)).Do(action => action());
         internal static bool NotEmpty(this Modifications mods) =>
             mods.IntValues.Count + mods.FloatValues.Count + mods.RangeValues.Count +
             mods.ColorValues.Count + mods.VectorValues.Count + mods.TextureHashes.Count > 0;
@@ -269,30 +269,30 @@ namespace SardineHead
         Action<int, Texture> CmpSetTexture;
         Dictionary<ShaderPropertyType, Dictionary<string, int>> Ids =
              Enum.GetValues<ShaderPropertyType>().ToDictionary(value => value, value => new Dictionary<string, int>());
-        internal int GetInt(string name) =>
+        internal Func<string, int> GetInt => name =>
             Ids[ShaderPropertyType.Int].TryGetValue(name, out var id) ? Material.GetInt(id) : default;
-        internal float GetFloat(string name) =>
+        internal Func<string, float> GetFloat => name =>
             Ids[ShaderPropertyType.Float].TryGetValue(name, out var id) ? Material.GetFloat(id) : default;
-        internal float GetRange(string name) =>
+        internal Func<string, float> GetRange => name =>
             Ids[ShaderPropertyType.Range].TryGetValue(name, out var id) ? Material.GetFloat(id) : default;
-        internal Color GetColor(string name) =>
+        internal Func<string, Color> GetColor => name =>
             Ids[ShaderPropertyType.Color].TryGetValue(name, out var id) ? Material.GetColor(id) : default;
-        internal Vector4 GetVector(string name) =>
+        internal Func<string, Vector4> GetVector => name =>
             Ids[ShaderPropertyType.Vector].TryGetValue(name, out var id) ? Material.GetVector(id) : default;
-        internal Texture GetTexture(string name) =>
+        internal Func<string, Texture> GetTexture => name =>
             Ids[ShaderPropertyType.Texture].TryGetValue(name, out var id) ? Material.GetTexture(id) : default;
-        internal void SetInt(string name, int value) =>
-            Ids[ShaderPropertyType.Int].TryGetValue(name, out var id).Maybe(id.Curry(value, CmpSetInt));
-        internal void SetFloat(string name, float value) =>
-            Ids[ShaderPropertyType.Float].TryGetValue(name, out var id).Maybe(id.Curry(value, CmpSetFloat));
-        internal void SetRange(string name, float value) =>
-            Ids[ShaderPropertyType.Range].TryGetValue(name, out var id).Maybe(id.Curry(value, CmpSetFloat));
-        internal void SetColor(string name, Color value) =>
-            Ids[ShaderPropertyType.Color].TryGetValue(name, out var id).Maybe(id.Curry(value, CmpSetClor));
-        internal void SetVector(string name, Vector4 value) =>
-            Ids[ShaderPropertyType.Vector].TryGetValue(name, out var id).Maybe(id.Curry(value, CmpSetVector));
-        internal void SetTexture(string name, Texture value) =>
-            Ids[ShaderPropertyType.Texture].TryGetValue(name, out var id).Maybe(id.Curry(value, CmpSetTexture));
+        internal Action<string, int> SetInt => (name, value) =>
+            Ids[ShaderPropertyType.Int].TryGetValue(name, out var id).Maybe(CmpSetInt.Apply(id).Apply(value));
+        internal Action<string, float> SetFloat => (name, value) =>
+            Ids[ShaderPropertyType.Float].TryGetValue(name, out var id).Maybe(CmpSetFloat.Apply(id).Apply(value));
+        internal Action<string, float> SetRange => (name, value) =>
+            Ids[ShaderPropertyType.Range].TryGetValue(name, out var id).Maybe(CmpSetFloat.Apply(id).Apply(value));
+        internal Action<string, Color> SetColor => (name, value) =>
+            Ids[ShaderPropertyType.Color].TryGetValue(name, out var id).Maybe(CmpSetClor.Apply(id).Apply(value));
+        internal Action<string, Vector4> SetVector => (name, value) =>
+            Ids[ShaderPropertyType.Vector].TryGetValue(name, out var id).Maybe(CmpSetVector.Apply(id).Apply(value));
+        internal Action<string, Texture> SetTexture => (name, value) =>
+            Ids[ShaderPropertyType.Texture].TryGetValue(name, out var id).Maybe(CmpSetTexture.Apply(id).Apply(value));
         internal Dictionary<string, ShaderPropertyType> Properties { get; init; } = new();
         internal Dictionary<string, Vector2> RangeLimits { get; init; } = new();
         void PopulateProperties(Shader shader) =>
@@ -447,7 +447,7 @@ namespace SardineHead
         static void LoadTexture(this string hash, long size, BinaryReader reader) =>
             Binaries[hash] = reader.ReadBytes((int)size);
         static void LoadTexture(ZipArchiveEntry entry) =>
-            new BinaryReader(entry.Open()).With(entry.Name.LoadTexture, entry.Length).Close();
+            Plugin.Instance.Log.Try(stream => entry.Name.LoadTexture(entry.Length, new BinaryReader(stream)), entry.Open());
         static void LoadTextures(this IEnumerable<ZipArchiveEntry> entries) =>
             entries.Where(entry => entry.FullName.StartsWith(TexturePath) || entry.FullName.StartsWith(LegacyPath))
                 .Where(entry => !Binaries.ContainsKey(entry.Name)).Do(LoadTexture);
@@ -478,7 +478,7 @@ namespace SardineHead
             Hooks.OnAccessoryChange += OnAccessoryChange;
             Current.TryAdd(data, this);
         }
-        void Cleanup(HumanData data)
+        Action<HumanData> Cleanup => data =>
         {
             Hooks.OnFaceReady -= OnFaceChange;
             Hooks.OnBodyReady -= OnBodyChange;
@@ -486,7 +486,7 @@ namespace SardineHead
             Hooks.OnClothesReady -= OnClothesChange;
             Hooks.OnAccessoryChange -= OnAccessoryChange;
             Current.Remove(data);
-        }
+        };
         void OnFaceChange(HumanFace item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
                 .Maybe(() => item.Wrap().Apply(Mods.Face));

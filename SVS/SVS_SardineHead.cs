@@ -27,7 +27,8 @@ namespace SardineHead
     internal static partial class UI
     {
         static GameObject ReferenceWindow =>
-            HumanCustom.Instance.ThumbnailSelectWindow.transform.parent.parent.parent.gameObject;
+            SV.Config.ConfigWindow.Instance.transform
+                .Find("Canvas").Find("Background").Find("MainWindow").gameObject;
         static GameObject ReferenceScrollView =>
             SV.Config.ConfigWindow.Instance.transform
                 .Find("Canvas").Find("Background").Find("MainWindow")
@@ -52,210 +53,150 @@ namespace SardineHead
                 .Find("Light").Find("grpLighting").Find("sldLightingPower").Find("Layout").Find("sld_19_000").gameObject;
         static GameObject ReferenceButton =>
             HumanCustom.Instance.CustomCharaFile.FileWindow.CharaCategory._btnSelect.gameObject;
+        internal static Action<Action> OnCustomHumanReady =>
+            action => (HumanCustom.Instance.Human == null)
+                .Either(action, () => UniTask.NextFrame().ContinueWith(OnCustomHumanReady.Apply(action)));
         internal static void Wrap(this Transform tf, GameObject go) => go.transform.SetParent(tf);
+        static Action<Transform> DestroyTransform =>
+            tf => UnityEngine.Object.Destroy(tf.gameObject);
+        static Action<Transform> DestroyChildren(string[] paths) =>
+            paths.Length == 0 ? DestroyTransform : tf => DestroyChildren(paths[1..])(tf.Find(paths[0]));
+        internal static Action<GameObject> Destroy(params string[] paths) =>
+            go => DestroyChildren(paths)(go.transform);
+        internal static Action<GameObject> DestroyAll =>
+            go => Enumerable.Range(0, go.transform.childCount)
+                .Select(go.transform.GetChild).Do(DestroyTransform);
+        internal static Action<GameObject> Destroy<T>() where T : Component =>
+            go => UnityEngine.Object.Destroy(go.GetComponent<T>());
+        internal static Action<GameObject> Component<T>() where T : Component =>
+            go => go.GetOrAddComponent<T>();
+        internal static Action<GameObject> Component<T>(Action<T> action) where T : Component =>
+            go => go.GetOrAddComponent<T>().With(action);
+        internal static Action<GameObject> ChildComponent<T>(Action<T> action) where T : Component =>
+            go => go.GetComponentInChildren<T>().With(action);
+        internal static Action<GameObject> ChildComponent<T>(Index index, Action<T> action) where T : Component =>
+            go => go.GetComponentsInChildren<T>()[index].With(action);
+        internal static Action<GameObject> ChildObject(string name, Action<GameObject> action) =>
+            parent => parent.With(action.Apply(new GameObject(name).With(parent.transform.Wrap)));
+        internal static Action<string, GameObject> Name => (name, go) => go.name = name;
+        internal static Action<bool, GameObject> Active = (value, go) => go.SetActive(value);
+        internal static Action<float, float, GameObject> Size =>
+            (width, height, go) => go.GetComponent<RectTransform>()
+                .With(ui => (ui.anchorMin, ui.anchorMax, ui.sizeDelta) = (new(0, 1), new(0, 1), new(width, height)));
+        internal static Action<float, float, GameObject> LayoutSize =>
+            (width, height, go) => go.AddComponent<LayoutElement>().With(ui => (ui.preferredWidth, ui.preferredHeight) = (width, height));
+        internal static Func<Action, Action<Unit>> ToUpdateAction => action => _ => action();
+        internal static Action<GameObject> OnUpdate(Action action) =>
+            go => go.GetComponentInParent<ObservableUpdateTrigger>().UpdateAsObservable().Subscribe(ToUpdateAction(action));
         static GameObject Canvas =>
-            new GameObject(Plugin.Name).With(HumanCustom.Instance.transform.Find("UI").Find("Root").Wrap).With(go =>
-            {
-                go.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-                go.AddComponent<CanvasScaler>().With(ui =>
-                {
-                    ui.referenceResolution = new(1920, 1080);
-                    ui.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                    ui.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                });
-                go.AddComponent<GraphicRaycaster>();
-                go.AddComponent<ObservableUpdateTrigger>();
-            });
+            new GameObject(Plugin.Name).With(HumanCustom.Instance.transform.Find("UI").Find("Root").Wrap).With(go => go
+                .With(Component<Canvas>(ui => ui.renderMode = RenderMode.ScreenSpaceOverlay))
+                .With(Component<CanvasScaler>(ui =>
+                    (ui.referenceResolution, ui.uiScaleMode, ui.screenMatchMode) =
+                        (new(1920, 1080), CanvasScaler.ScaleMode.ScaleWithScreenSize, CanvasScaler.ScreenMatchMode.MatchWidthOrHeight)))
+                .With(Component<GraphicRaycaster>())
+                .With(Component<ObservableUpdateTrigger>()));
         internal static ConfigEntry<float> AnchorX;
         internal static ConfigEntry<float> AnchorY;
-        static Action<Unit> UpdateAnchorPosition(RectTransform ui) =>
-            _ => (AnchorX.Value, AnchorY.Value) = (ui.anchoredPosition.x, ui.anchoredPosition.y);
+        static Action<RectTransform> UpdateAnchorPosition => ui =>
+            (AnchorX.Value, AnchorY.Value) = (ui.anchoredPosition.x, ui.anchoredPosition.y);
         internal static GameObject Window =>
-            UnityEngine.Object.Instantiate(ReferenceWindow, Canvas.transform).With(go =>
-            {
-                UnityEngine.Object.Destroy(go.transform.Find("Category").gameObject);
-                UnityEngine.Object.Destroy(go.transform.Find("TabBG").gameObject);
-                UnityEngine.Object.Destroy(go.transform.Find("EditWindow").gameObject);
-                go.GetComponentInParent<ObservableUpdateTrigger>().UpdateAsObservable().Subscribe(UpdateAnchorPosition(
-                go.GetComponent<RectTransform>().With(ui =>
-                {
-                    ui.anchorMin = new(0.0f, 1.0f);
-                    ui.anchorMax = new(0.0f, 1.0f);
-                    ui.pivot = new(0.0f, 1.0f);
-                    ui.sizeDelta = new(800, 800);
-                    ui.anchoredPosition = new(AnchorX.Value, AnchorY.Value);
-                })));
-                go.GetComponentInChildren<TextMeshProUGUI>().SetText(Plugin.Name);
-                go.AddComponent<UI_DragWindow>();
-            });
-        internal static Tuple<Transform, Transform> Panels(Transform parent) =>
-            Panels(new GameObject("Panels").With(parent.Wrap).With(go =>
-            {
-                go.AddComponent<RectTransform>()
-                    .With(ui => (ui.sizeDelta, ui.anchorMin, ui.anchorMax) = (new(800, 750), new(0, 0), new(1, 1)));
-                go.AddComponent<LayoutElement>()
-                    .With(ui => (ui.preferredWidth, ui.preferredHeight) = (800, 750));
-                go.AddComponent<HorizontalLayoutGroup>()
-                    .With(ui => (ui.childControlWidth, ui.childControlHeight) = (true, false));
-                go.AddComponent<ToggleGroup>().allowSwitchOff = false;
-            }));
-        static Tuple<Transform, Transform> Panels(GameObject go) =>
-            new(ScrollView(go.transform, 300), ScrollView(go.transform, 500));
-        internal static Transform ScrollView(Transform parent, float width) =>
-            UnityEngine.Object.Instantiate(ReferenceScrollView, parent)
-                .With(Resize, width, 750f).With(EnableLayout, width, 750f)
-                .transform.With(ResizeScrollbar).With(ResizeViewport, width - 10)
-                .Find("Viewport").Find("Content").With(tf =>
-                {
-                    Enumerable.Range(0, tf.childCount)
-                        .Select(tf.GetChild).Select(tf => tf.gameObject)
-                        .Do(UnityEngine.Object.Destroy);
-                    tf.gameObject.GetComponent<ContentSizeFitter>()
-                        .With(ui => (ui.horizontalFit, ui.verticalFit) =
-                            (ContentSizeFitter.FitMode.PreferredSize, ContentSizeFitter.FitMode.PreferredSize));
-                });
-        static void Resize(float width, float height, GameObject go) =>
-            go.GetComponent<RectTransform>().With(ui =>
-                 (ui.anchorMin, ui.anchorMax, ui.sizeDelta) =
-                 (new(0, 1), new(0, 1), new(width, height)));
-        static void EnableLayout(float width, float height, GameObject go) =>
-            go.AddComponent<LayoutElement>().With(ui => (ui.preferredWidth, ui.preferredHeight) = (width, height));
-        static void ResizeScrollbar(Transform tf) => tf.Find("Scrollbar Vertical").gameObject.With(go =>
-            go.GetComponent<RectTransform>()
+            UnityEngine.Object.Instantiate(ReferenceWindow, Canvas.transform).With(go => go
+                .With(Destroy("Title", "btnClose")).With(Destroy("Settings"))
+                .With(Component<RectTransform>(ui =>
+                    (ui.anchorMin, ui.anchorMax, ui.pivot, ui.sizeDelta, ui.anchoredPosition) =
+                        (new(0, 1), new(0, 1), new(0, 1), new(800, 800), new(AnchorX.Value, AnchorY.Value))))
+                .With(OnUpdate(UpdateAnchorPosition.Apply(go.GetComponent<RectTransform>())))
+                .With(Component<VerticalLayoutGroup>(ui =>
+                    (ui.enabled, ui.childControlWidth, ui.childControlHeight, ui.spacing, ui.childAlignment) = (true, true, true, 10, TextAnchor.UpperLeft)))
+                .With(Component<UI_DragWindow>()))
+                .With(ChildComponent<TextMeshProUGUI>(ui => ui.SetText(Plugin.Name)));
+        internal static Func<Transform, Tuple<Transform, Transform>> Panels =>
+            parent => ScrollViews(new GameObject("Panels").With(parent.Wrap)
+                .With(Component<ToggleGroup>(ui => ui.allowSwitchOff = false))
+                .With(Component<RectTransform>(ui => (ui.sizeDelta, ui.anchorMin, ui.anchorMax) = (new(800, 750), new(0, 0), new(1, 1))))
+                .With(Component<LayoutElement>(ui => (ui.preferredWidth, ui.preferredHeight) = (800, 750)))
+                .With(Component<HorizontalLayoutGroup>(ui => (ui.childControlWidth, ui.childControlHeight) = (true, false))));
+        static Func<GameObject, Tuple<Transform, Transform>> ScrollViews =>
+            go => new(ScrollView(go.transform, 300), ScrollView(go.transform, 500));
+        static Func<Transform, float, Transform> ScrollView =>
+            (parent, width) => UnityEngine.Object.Instantiate(ReferenceScrollView, parent)
+                .With(Size.Apply(width).Apply(750)).With(LayoutSize.Apply(width).Apply(750))
+                .transform.With(SetScrollbarSize.Apply(10)).With(SetViewportSize.Apply(width - 10))
+                .Find("Viewport").Find("Content").gameObject.With(DestroyAll)
+                .With(Component<ContentSizeFitter>(ui => (ui.horizontalFit, ui.verticalFit) =
+                    (ContentSizeFitter.FitMode.PreferredSize, ContentSizeFitter.FitMode.PreferredSize))).transform;
+        static Action<float, Transform> SetScrollbarSize => (width, tf) => tf.Find("Scrollbar Vertical").gameObject
+            .With(go => go.GetComponent<RectTransform>()
                 .With(ui => (ui.anchorMin, ui.anchorMax, ui.pivot, ui.offsetMin, ui.offsetMax, ui.sizeDelta) =
-                    (new(1, 1), new(1, 1), new(1, 1), new(0, 0), new(-5, 0), new(10, 750))));
-        static void ResizeViewport(float width, Transform tf) => tf.Find("Viewport").gameObject.With(go =>
-        {
-            go.GetComponent<RectMask2D>().enabled = true;
-            go.GetComponent<RectTransform>()
+                    (new(1, 1), new(1, 1), new(1, 1), new(0, 0), new(0, 0), new(width, 750))));
+        static Action<float, Transform> SetViewportSize => (width, tf) => tf.Find("Viewport").gameObject
+            .With(go => go.GetComponent<RectMask2D>().enabled = true)
+            .With(go => go.GetComponent<RectTransform>()
                 .With(ui => (ui.anchorMin, ui.anchorMax, ui.pivot, ui.sizeDelta, ui.offsetMin, ui.offsetMax) =
-                    (new(0, 0), new(1, 1), new(0, 1), new(width, 750), new(0, 0), new(0, 0)));
-        });
-        internal static GameObject Toggle(string name, Transform parent) =>
-            UnityEngine.Object.Instantiate(ReferenceToggle, parent).With(go =>
-            {
-                UnityEngine.Object.Destroy(go.GetComponent<CategoryKindToggle>());
-                go.SetActive(true);
-                go.GetComponent<Toggle>().group = parent.GetComponentInParent<ToggleGroup>();
-                go.GetComponentInChildren<TextMeshProUGUI>().With(ui =>
-                {
-                    ui.enableAutoSizing = false;
-                    ui.overflowMode = TextOverflowModes.Ellipsis;
-                    ui.verticalAlignment = VerticalAlignmentOptions.Top;
-                    ui.horizontalAlignment = HorizontalAlignmentOptions.Left;
-                    ui.SetText(name);
-                });
-                go.AddComponent<LayoutElement>().With(ui =>
-                    (ui.preferredWidth, ui.preferredHeight) = (290, 30));
-            });
-        internal static Action<GameObject> Rename(string name) => go => go.name = name;
-        internal static Action<GameObject> Active = go => go.SetActive(true);
-        internal static Action<GameObject> Inactive = go => go.SetActive(false);
-        internal static Action<GameObject> Configure<T>(Action<T> action) where T : Component => go => go.GetComponent<T>().With(action);
-        internal static void FitLayout<T>(this GameObject go) where T : HorizontalOrVerticalLayoutGroup
-        {
-            go.AddComponent<RectTransform>().localScale = new(1, 1);
-            go.AddComponent<LayoutElement>();
-            go.AddComponent<T>().With(ui =>
-            {
-                ui.childControlWidth = true;
-                ui.childControlHeight = true;
-            });
-            go.AddComponent<ContentSizeFitter>().With(ui =>
-            {
-                ui.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-                ui.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            });
-        }
-        internal static void Label(int size, string text, GameObject parent) =>
-            UnityEngine.Object.Instantiate(ReferenceLabel, parent.transform)
-               .With(go => UnityEngine.Object.Destroy(go.GetComponent<Localize.Translate.UIBindData>()))
-               .With(go => go.AddComponent<LayoutElement>().With(ui =>
-               {
-                   ui.preferredWidth = size;
-                   ui.preferredHeight = 30;
-               }))
-               .With(go => go.GetComponent<TextMeshProUGUI>().With(ui =>
-               {
-                   ui.enableAutoSizing = false;
-                   ui.autoSizeTextContainer = false;
-                   ui.overflowMode = TextOverflowModes.Ellipsis;
-                   ui.verticalAlignment = VerticalAlignmentOptions.Top;
-                   ui.horizontalAlignment = HorizontalAlignmentOptions.Left;
-                   ui.SetText(text);
-               }));
-        internal static void Check(string label, GameObject parent) =>
-            UnityEngine.Object.Instantiate(ReferenceCheck, parent.transform).With(go =>
-            {
-                go.AddComponent<LayoutElement>().With(ui => (ui.preferredWidth, ui.preferredHeight) = (250, 30));
-                go.GetComponentInChildren<Toggle>().isOn = false;
-                go.transform.Find("cb_back").GetComponent<RectTransform>().With(ui =>
-                {
-                    ui.anchorMin = new(0.0f, 1.0f);
-                    ui.anchorMax = new(0.0f, 1.0f);
-                    ui.offsetMin = new(0.0f, -24.0f);
-                    ui.offsetMax = new(24.0f, 0.0f);
-                });
-                go.GetComponentInChildren<TextMeshProUGUI>().With(ui =>
-                {
-                    ui.enableAutoSizing = false;
-                    ui.autoSizeTextContainer = false;
-                    ui.overflowMode = TextOverflowModes.Ellipsis;
-                    ui.verticalAlignment = VerticalAlignmentOptions.Top;
-                    ui.horizontalAlignment = HorizontalAlignmentOptions.Left;
-                    ui.SetText(label);
-                });
-            });
-        internal static void Input(TMP_InputField.ContentType type, GameObject parent) =>
-            UnityEngine.Object.Instantiate(ReferenceInput, parent.transform).With(go =>
-            {
-                go.AddComponent<LayoutElement>().preferredWidth = 150;
-                go.GetComponent<TMP_InputField>().With(ui =>
-                {
-                    ui.contentType = type;
-                    ui.characterLimit = 10;
-                    ui.restoreOriginalTextOnEscape = true;
-                });
-            });
-        internal static void Color(GameObject parent) =>
-            UnityEngine.Object.Instantiate(ReferenceColor, parent.transform)
-                .With(go => go.GetComponent<LayoutElement>().preferredWidth = 100);
-        internal static void Slider(GameObject parent) =>
-            UnityEngine.Object.Instantiate(ReferenceSlider, parent.transform)
-                .With(go => go.AddComponent<LayoutElement>()
-                    .With(ui => (ui.preferredWidth, ui.preferredHeight) = (100, 20)));
-        internal static void Button(string label, GameObject parent) =>
-            UnityEngine.Object.Instantiate(ReferenceButton, parent.transform).With(go =>
-            {
-                go.AddComponent<LayoutElement>().With(ui =>
-                {
-                    ui.preferredWidth = 100;
-                    ui.preferredHeight = 30;
-                });
-                go.GetComponentsInChildren<TextMeshProUGUI>().Do(ui =>
-                {
-                    ui.autoSizeTextContainer = true;
-                    ui.SetText(label);
-                });
-                go.GetComponent<Button>().interactable = true;
-            });
+                    (new(0, 0), new(1, 1), new(0, 1), new(width, 750), new(0, 0), new(0, 0))));
+        static Action<string, TextMeshProUGUI> SetTextMeshProUGUI =>
+            (value, ui) => (ui.enableAutoSizing, ui.overflowMode, ui.verticalAlignment, ui.horizontalAlignment, ui.m_text) =
+                (false, TextOverflowModes.Ellipsis, VerticalAlignmentOptions.Top, HorizontalAlignmentOptions.Left, value);
+        internal static Func<string, Transform, GameObject> Toggle =>
+            (name, parent) => UnityEngine.Object.Instantiate(ReferenceToggle, parent).With(go => go
+                .With(Destroy<CategoryKindToggle>())
+                .With(Active.Apply(true))
+                .With(Component<Toggle>(ui => ui.group = parent.GetComponentInParent<ToggleGroup>()))
+                .With(LayoutSize.Apply(290).Apply(30))
+                .With(ChildComponent(SetTextMeshProUGUI.Apply(name)))); 
+        internal static Action<float, RectOffset, GameObject> ContentLayout<T>(TextAnchor anchor) where T : HorizontalOrVerticalLayoutGroup =>
+            (spacing, offset, go) => go
+                .With(Component<RectTransform>(ui => ui.localScale = new(1, 1)))
+                .With(Component<LayoutElement>())
+                .With(Component<T>(ui => (ui.childControlWidth, ui.childControlHeight, ui.spacing, ui.padding, ui.childAlignment) =
+                    (true, true, spacing, offset, anchor)))
+                .With(Component<ContentSizeFitter>(ui => (ui.verticalFit, ui.horizontalFit) =
+                    (ContentSizeFitter.FitMode.PreferredSize, ContentSizeFitter.FitMode.PreferredSize)));
+        internal static Action<int, string, GameObject> Label =>
+            (size, text, parent) => UnityEngine.Object.Instantiate(ReferenceLabel, parent.transform)
+                .With(Destroy<Localize.Translate.UIBindData>())
+                .With(LayoutSize.Apply(size).Apply(30))
+                .With(Component(SetTextMeshProUGUI.Apply(text)));
+        internal static Action<string, GameObject> Check =>
+            (label, parent) => UnityEngine.Object.Instantiate(ReferenceCheck, parent.transform)
+                .With(LayoutSize.Apply(250).Apply(30))
+                .With(Component<Toggle>(ui => ui.isOn = false))
+                .With(ChildComponent(SetTextMeshProUGUI.Apply(label)))
+                .With(ChildComponent<RectTransform>(1, ui =>
+                    (ui.anchorMin, ui.anchorMax, ui.offsetMin, ui.offsetMax) = (new (0,1), new(0,1), new(0,-24), new(24,0))));
+        internal static Action<TMP_InputField.ContentType, GameObject> Input =>
+            (type, parent) => UnityEngine.Object.Instantiate(ReferenceInput, parent.transform)
+                .With(Component<LayoutElement>(ui => ui.preferredWidth = 150))
+                .With(Component<TMP_InputField>(ui =>
+                    (ui.contentType, ui.characterLimit, ui.restoreOriginalTextOnEscape) = (type, 10, true)));
+        internal static Action<GameObject> Color =>
+            parent => UnityEngine.Object.Instantiate(ReferenceColor, parent.transform)
+                .With(Component<LayoutElement>(ui => ui.preferredWidth = 100));
+        internal static Action<GameObject> Slider =>
+            parent => UnityEngine.Object.Instantiate(ReferenceSlider, parent.transform)
+                .With(LayoutSize.Apply(100).Apply(20));
+        internal static Action<string, GameObject> Button =>
+            (label, parent) => UnityEngine.Object.Instantiate(ReferenceButton, parent.transform)
+                .With(LayoutSize.Apply(100).Apply(30))
+                .With(Component<Button>(ui => ui.interactable = true))
+                .With(ChildComponent<TextMeshProUGUI>(ui => (ui.autoSizeTextContainer, ui.m_text) = (true, label)));
     }
     internal abstract class CommonEdit
     {
         protected static GameObject PrepareArchetype(string name, Transform parent) =>
             new GameObject(name).With(parent.Wrap)
-                .With(UI.Inactive).With(UI.Check, "PropertyName")
-                .With(UI.FitLayout<HorizontalLayoutGroup>)
-                .With(UI.Configure<HorizontalLayoutGroup>(ui =>
-                    (ui.padding, ui.spacing, ui.childAlignment) = (new(5, 15, 2, 2), 0, TextAnchor.UpperLeft)))
-                .With(UI.Configure<LayoutElement>(ui => ui.preferredWidth = 500));
+                .With(UI.Active.Apply(false))
+                .With(UI.Check.Apply("PropertyName"))
+                .With(UI.Component<LayoutElement>(ui => ui.preferredWidth = 500))
+                .With(UI.ContentLayout<HorizontalLayoutGroup>(TextAnchor.UpperLeft).Apply(0).Apply(new(5, 15, 2, 2)));
         protected abstract GameObject Archetype { get; }
         protected MaterialWrapper Wrapper;
         protected GameObject Edit;
         CommonEdit(MaterialWrapper wrapper) => Wrapper = wrapper;
         protected CommonEdit(string name, Transform parent, MaterialWrapper wrapper) : this(wrapper) =>
-            Edit = UnityEngine.Object.Instantiate(Archetype, parent).With(UI.Active)
-                .With(UI.Rename(name)).With(go => go.GetComponentInChildren<TextMeshProUGUI>().With(ui => ui.SetText(name)));
+            Edit = UnityEngine.Object.Instantiate(Archetype, parent).With(UI.Active.Apply(true))
+                .With(UI.Name.Apply(name)).With(UI.ChildComponent<TextMeshProUGUI>(ui => ui.SetText(name)));
         internal bool Check
         {
             get => Edit.GetComponentInChildren<Toggle>().isOn;
@@ -263,13 +204,15 @@ namespace SardineHead
         }
         internal abstract void Store(Modifications mod);
         internal abstract void Apply(Modifications mod);
-        internal abstract void Update();
+        internal virtual void Update() => Check.Either(UpdateGet, UpdateSet);
+        protected abstract void UpdateGet();
+        protected abstract void UpdateSet();
     }
     internal class RenderingEdit : CommonEdit
     {
         static GameObject Base { get; set; }
         internal static void PrepareArchetype(GameObject parent) =>
-            Base = PrepareArchetype("BoolEdit", parent.transform).With(UI.Check, "Enabled");
+            Base = PrepareArchetype("BoolEdit", parent.transform).With(UI.Check.Apply("Enabled"));
         protected override GameObject Archetype => Base;
         internal RenderingEdit(string name, Transform parent, MaterialWrapper wrapper) : base(name, parent, wrapper) =>
             Value.onValueChanged.AddListener(OnChange);
@@ -290,14 +233,12 @@ namespace SardineHead
                 BoolValue.Disabled => (true, false.With(Value.SetIsOnWithoutNotify)),
                 _ => (false, true.With(Value.SetIsOnWithoutNotify))
             };
-        void UpdateGet() =>
-            Value.SetIsOnWithoutNotify(Wrapper.Renderer.enabled);
-        void UpdateSet() =>
-            Wrapper.Renderer.enabled = Value.isOn;
-        void UpdateValue() =>
-            Check.Either(UpdateGet, UpdateSet);
         internal override void Update() =>
-            Label.With(UpdateValue).SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
+            Label.With(base.Update).SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
+        protected override void UpdateGet() =>
+            Value.SetIsOnWithoutNotify(Wrapper.Renderer.enabled);
+        protected override void UpdateSet() =>
+            Wrapper.Renderer.enabled = Value.isOn;
     }
     internal class IntEdit : CommonEdit
     {
@@ -305,22 +246,22 @@ namespace SardineHead
         protected override GameObject Archetype => Base;
         internal static void PrepareArchetype(GameObject parent) =>
             Base = PrepareArchetype("IntEdit", parent.transform)
-                .With(UI.Label, 80, "int:")
-                .With(UI.Input, TMP_InputField.ContentType.IntegerNumber);
+                .With(UI.Label.Apply(80).Apply("int:"))
+                .With(UI.Input.Apply(TMP_InputField.ContentType.IntegerNumber));
         TMP_InputField Input => Edit.GetComponentInChildren<TMP_InputField>();
         Action<string> OnChange =>
-            input => int.TryParse(input, out var value).Maybe(Edit.name.Curry(value, Wrapper.SetInt));
+            input => int.TryParse(input, out var value)
+                .Maybe(Wrapper.SetInt.Apply(Edit.name).Apply(value));
         internal IntEdit(string name, Transform parent, MaterialWrapper wrapper) : base(name, parent, wrapper) =>
             Input.onValueChanged.AddListener(OnChange);
         internal override void Store(Modifications mod) =>
             Check.Maybe(() => mod.IntValues[Edit.name] = int.TryParse(Input.text, out var value) ? value : Wrapper.GetInt(Edit.name));
         internal override void Apply(Modifications mod) =>
-            (Check = mod.IntValues.TryGetValue(Edit.name, out var value))
-                .Maybe(() => Input.With(Edit.name.Curry(value, Wrapper.SetInt)).SetTextWithoutNotify(value.ToString()));
-        internal override void Update() =>
-            Check.Either(
-                () => Input.SetTextWithoutNotify(Wrapper.GetInt(Edit.name).ToString()),
-                () => int.TryParse(Input.text, out var value).Maybe(() => Wrapper.SetInt(Edit.name, value)));
+            (Check = mod.IntValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetInt.Apply(Edit.name).Apply(value));
+        protected override void UpdateGet() =>
+            Input.SetTextWithoutNotify(Wrapper.GetInt(Edit.name).ToString());
+        protected override void UpdateSet() =>
+            int.TryParse(Input.text, out var value).Maybe(Wrapper.SetInt.Apply(Edit.name).Apply(value));
     }
     internal class FloatEdit : CommonEdit
     {
@@ -328,32 +269,31 @@ namespace SardineHead
         protected override GameObject Archetype => Base;
         internal static void PrepareArchetype(GameObject parent) =>
             Base = PrepareArchetype("FloatEdit", parent.transform)
-                .With(UI.Label, 80, "float:")
-                .With(UI.Input, TMP_InputField.ContentType.DecimalNumber);
+                .With(UI.Label.Apply(80).Apply("float:"))
+                .With(UI.Input.Apply(TMP_InputField.ContentType.DecimalNumber));
         TMP_InputField Input => Edit.GetComponentInChildren<TMP_InputField>();
         Action<string> OnChange =>
-            input => float.TryParse(input, out float value).Maybe(Edit.name.Curry(value, Wrapper.SetFloat));
+            input => float.TryParse(input, out float value).Maybe(Wrapper.SetFloat.Apply(Edit.name).Apply(value));
         internal FloatEdit(string name, Transform parent, MaterialWrapper wrapper) : base(name, parent, wrapper) =>
             Input.onValueChanged.AddListener(OnChange);
         internal override void Store(Modifications mod) =>
             Check.Maybe(() => mod.FloatValues[Edit.name] = float.TryParse(Input.text, out var value) ? value : Wrapper.GetFloat(Edit.name));
         internal override void Apply(Modifications mod) =>
-            (Check = mod.FloatValues.TryGetValue(Edit.name, out var value))
-                .Maybe(() => Input.With(Edit.name.Curry(value, Wrapper.SetFloat)).SetTextWithoutNotify(value.ToString()));
-        internal override void Update() =>
-            Check.Either(
-                () => Input.SetTextWithoutNotify(Wrapper.GetInt(Edit.name).ToString()),
-                () => float.TryParse(Input.text, out var value).Maybe(() => Wrapper.SetFloat(Edit.name, value)));
+            (Check = mod.FloatValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetFloat.Apply(Edit.name).Apply(value));
+        protected override void UpdateGet() =>
+            Input.SetTextWithoutNotify(Wrapper.GetInt(Edit.name).ToString());
+        protected override void UpdateSet() =>
+            float.TryParse(Input.text, out var value).Maybe(Wrapper.SetFloat.Apply(Edit.name).Apply(value));
     }
     internal class RangeEdit : CommonEdit
     {
         static GameObject Base { get; set; }
         protected override GameObject Archetype => Base;
         internal static void PrepareArchetype(GameObject parent) =>
-            Base = PrepareArchetype("RangeEdit", parent.transform).With(UI.Label, 80, "").With(UI.Slider);
+            Base = PrepareArchetype("RangeEdit", parent.transform).With(UI.Label.Apply(80).Apply("n/a")).With(UI.Slider);
         Slider Input => Edit.GetComponentInChildren<Slider>();
         TextMeshProUGUI Value => Edit.GetComponentsInChildren<TextMeshProUGUI>()[^1];
-        Action<float> OnChange => value => Wrapper.SetRange(Edit.name, value.With(() => Value.SetText(value.ToString())));
+        Action<float> OnChange => value => Wrapper.SetRange.Apply(Edit.name).Apply(value);
         RangeEdit(string name, Transform parent, MaterialWrapper wrapper, Vector2 limits) : base(name, parent, wrapper) =>
             (Input.minValue, Input.maxValue) = (limits.x, limits.y);
         internal RangeEdit(string name, Transform parent, MaterialWrapper wrapper) : this(name, parent, wrapper, wrapper.RangeLimits[name]) =>
@@ -361,12 +301,13 @@ namespace SardineHead
         internal override void Store(Modifications mod) =>
             Check.Maybe(() => mod.RangeValues[Edit.name] = Input.value);
         internal override void Apply(Modifications mod) =>
-            (Check = mod.RangeValues.TryGetValue(Edit.name, out var value))
-                .Maybe(() => Input.With(Edit.name.Curry(value, Wrapper.SetRange)).SetValueWithoutNotify(value));
+            (Check = mod.RangeValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetRange.Apply(Edit.name).Apply(value));
         internal override void Update() =>
-            Check.Either(
-                () => Input.SetValueWithoutNotify(Wrapper.GetRange(Edit.name)),
-                () => Wrapper.SetRange(Edit.name, Input.value));
+            Value.With(base.Update).SetText(Input.value.ToString());
+        protected override void UpdateGet() =>
+            Input.SetValueWithoutNotify(Wrapper.GetRange(Edit.name));
+        protected override void UpdateSet() =>
+            Wrapper.SetRange(Edit.name, Input.value);
     }
     internal class ColorEdit : CommonEdit
     {
@@ -375,19 +316,18 @@ namespace SardineHead
         internal static void PrepareArchetype(GameObject parent) =>
             Base = PrepareArchetype("ColorEdit", parent.transform).With(UI.Color);
         ThumbnailColor Input => Edit.GetComponentInChildren<ThumbnailColor>();
-        Func<Color, bool> OnChange => value => true.With(Edit.name.Curry(value, Wrapper.SetColor));
-        Func<Color> OnFetch => () => Wrapper.GetColor(Edit.name);
+        Func<Color, bool> OnChange => value => true.With(Wrapper.SetColor.Apply(Edit.name).Apply(value));
         internal ColorEdit(string name, Transform parent, MaterialWrapper wrapper) : base(name, parent, wrapper) =>
-             Input.Initialize(Edit.name, OnFetch, OnChange, true, true);
+             Input.Initialize(Edit.name, Wrapper.GetColor.Apply(Edit.name), OnChange, true, true);
         internal override void Store(Modifications mod) =>
             Check.Maybe(() => mod.ColorValues[Edit.name] = Input.GetColor());
         internal override void Apply(Modifications mod) =>
             (Check = mod.ColorValues.TryGetValue(Edit.name, out var value))
-                .Maybe(() => Input.With(Edit.name.Curry((Color)value, Wrapper.SetColor)).SetColor(value));
-        internal override void Update() =>
-            Check.Either(
-                () => Input.SetColor(Wrapper.GetColor(Edit.name)),
-                () => Wrapper.SetColor(Edit.name, Input.GetColor()));
+                .Maybe(Wrapper.SetColor.Apply(Edit.name).Apply(value));
+        protected override void UpdateGet() =>
+            Input.SetColor(Wrapper.GetColor(Edit.name));
+        protected override void UpdateSet() =>
+            Wrapper.SetColor(Edit.name, Input.GetColor());
     }
     internal class VectorEdit : CommonEdit
     {
@@ -395,27 +335,25 @@ namespace SardineHead
         protected override GameObject Archetype => Base;
         internal static void PrepareArchetype(GameObject parent) =>
             Base = PrepareArchetype("VectorEdit", parent.transform)
-                .With(go => new GameObject("VectorValues").With(go.transform.Wrap)
-                .With(UI.FitLayout<VerticalLayoutGroup>).With(vt =>
-                {
-                    vt.GetComponent<LayoutElement>().preferredWidth = 230;
-                    new GameObject("x").With(vt.transform.Wrap)
-                        .With(UI.FitLayout<HorizontalLayoutGroup>)
-                        .With(UI.Label, 80, "float(x):")
-                        .With(UI.Input, TMP_InputField.ContentType.DecimalNumber);
-                    new GameObject("y").With(vt.transform.Wrap)
-                        .With(UI.FitLayout<HorizontalLayoutGroup>)
-                        .With(UI.Label, 80, "float(y):")
-                        .With(UI.Input, TMP_InputField.ContentType.DecimalNumber);
-                    new GameObject("z").With(vt.transform.Wrap)
-                        .With(UI.FitLayout<HorizontalLayoutGroup>)
-                        .With(UI.Label, 80, "float(z):")
-                        .With(UI.Input, TMP_InputField.ContentType.DecimalNumber);
-                    new GameObject("w").With(vt.transform.Wrap)
-                        .With(UI.FitLayout<HorizontalLayoutGroup>)
-                        .With(UI.Label, 80, "float(w):")
-                        .With(UI.Input, TMP_InputField.ContentType.DecimalNumber);
-                }));
+                .With(UI.ChildObject("VectorValues", go => go
+                .With(UI.Component<VerticalLayoutGroup>())
+                .With(UI.Component<LayoutElement>(ui => ui.preferredWidth = 230))
+                .With(UI.ChildObject("x", gox => gox
+                    .With(UI.Component<HorizontalLayoutGroup>())
+                    .With(UI.Label.Apply(80).Apply("float(x):"))
+                    .With(UI.Input.Apply(TMP_InputField.ContentType.DecimalNumber))))
+                .With(UI.ChildObject("y", goy => goy
+                    .With(UI.Component<HorizontalLayoutGroup>())
+                    .With(UI.Label.Apply(80).Apply("float(y):"))
+                    .With(UI.Input.Apply(TMP_InputField.ContentType.DecimalNumber))))
+                .With(UI.ChildObject("z", goz => goz
+                    .With(UI.Component<HorizontalLayoutGroup>())
+                    .With(UI.Label.Apply(80).Apply("float(z):"))
+                    .With(UI.Input.Apply(TMP_InputField.ContentType.DecimalNumber))))
+                .With(UI.ChildObject("w", gow => gow
+                    .With(UI.Component<HorizontalLayoutGroup>())
+                    .With(UI.Label.Apply(80).Apply("float(w):"))
+                    .With(UI.Input.Apply(TMP_InputField.ContentType.DecimalNumber))))));
         TMP_InputField InputX => Edit.GetComponentsInChildren<TMP_InputField>()[0];
         TMP_InputField InputY => Edit.GetComponentsInChildren<TMP_InputField>()[1];
         TMP_InputField InputZ => Edit.GetComponentsInChildren<TMP_InputField>()[2];
@@ -431,16 +369,20 @@ namespace SardineHead
         }
         Action<string> OnChangeX =>
             input => float.TryParse(input, out float value)
-                .Maybe(Edit.name.Curry(Value = new Vector4(value, Value.y, Value.z, Value.w), Wrapper.SetVector));
+                .Maybe(Wrapper.SetVector.Apply(Edit.name)
+                .Apply(Value = new Vector4(value, Value.y, Value.z, Value.w)));
         Action<string> OnChangeY =>
             input => float.TryParse(input, out float value)
-                .Maybe(Edit.name.Curry(Value = new Vector4(Value.x, value, Value.z, Value.w), Wrapper.SetVector));
+                .Maybe(Wrapper.SetVector.Apply(Edit.name)
+                .Apply(Value = new Vector4(Value.x, value, Value.z, Value.w)));
         Action<string> OnChangeZ =>
             input => float.TryParse(input, out float value)
-                .Maybe(Edit.name.Curry(Value = new Vector4(Value.x, Value.y, value, Value.w), Wrapper.SetVector));
+                .Maybe(Wrapper.SetVector.Apply(Edit.name)
+                .Apply(Value = new Vector4(Value.x, Value.y, value, Value.w)));
         Action<string> OnChangeW =>
             input => float.TryParse(input, out float value)
-                .Maybe(Edit.name.Curry(Value = new Vector4(Value.x, Value.y, Value.z, value), Wrapper.SetVector));
+                .Maybe(Wrapper.SetVector.Apply(Edit.name)
+                .Apply(Value = new Vector4(Value.x, Value.y, Value.z, value)));
         internal VectorEdit(string name, Transform parent, MaterialWrapper wrapper) : base(name, parent, wrapper)
         {
             Apply(Wrapper.GetVector(Edit.name));
@@ -453,11 +395,11 @@ namespace SardineHead
             Check.Maybe(() => mod.VectorValues[Edit.name] = Value);
         internal override void Apply(Modifications mod) =>
             (Check = mod.VectorValues.TryGetValue(Edit.name, out var value))
-                .Maybe(() => Wrapper.SetVector(Edit.name, Value.With(Apply)));
-        internal override void Update() =>
-            Check.Either(
-                () => Apply(Wrapper.GetVector(Edit.name)),
-                () => Wrapper.SetVector(Edit.name, Value));
+                .Maybe(Wrapper.SetVector.Apply(Edit.name).Apply(Value.With(Apply)));
+        protected override void UpdateGet() =>
+            Apply(Wrapper.GetVector(Edit.name));
+        protected override void UpdateSet() =>
+            Wrapper.SetVector(Edit.name, Value);
     }
     internal class TextureEdit : CommonEdit
     {
@@ -465,11 +407,12 @@ namespace SardineHead
         protected override GameObject Archetype => Base;
         internal static void PrepareArchetype(GameObject parent) =>
             Base = PrepareArchetype("TextureEdit", parent.transform)
-                .With(go => new GameObject("TextureValues").With(go.transform.Wrap)
-                .With(UI.FitLayout<VerticalLayoutGroup>).With(vt =>
-                        new GameObject("Buttons").With(vt.With(UI.Label, 200, "").transform.Wrap)
-                            .With(UI.FitLayout<HorizontalLayoutGroup>)
-                            .With(hr => hr.With(UI.Button, "import").With(UI.Button, "export"))));
+                .With(UI.ChildObject("TextureValues", go => go
+                .With(UI.Component<VerticalLayoutGroup>())
+                .With(UI.Label.Apply(200).Apply(""))
+                .With(UI.ChildObject("Buttons", buttons => buttons
+                    .With(UI.Component<HorizontalLayoutGroup>())
+                    .With(UI.Button.Apply("import")).With(UI.Button.Apply("export"))))));
         TextMeshProUGUI Value => Edit.GetComponentsInChildren<TextMeshProUGUI>()[1];
         Button Import => Edit.GetComponentsInChildren<Button>()[0];
         Button Export => Edit.GetComponentsInChildren<Button>()[1];
@@ -500,8 +443,11 @@ namespace SardineHead
             (Check = mod.TextureHashes.TryGetValue(Edit.name, out var value))
                 .Maybe(() => Wrapper.SetTexture(Edit.name, (Value.text = value).HashToTexture()));
         internal override void Update() =>
-            (!Check).Maybe(() => Wrapper.GetTexture(Edit.name).With(value =>
-                Value.SetText((Export.interactable = value is not null) ? value.name : "")));
+            Export.With(base.Update).interactable = Wrapper.GetTexture(Edit.name) is not null;
+        protected override void UpdateGet() =>
+            Value.SetText(Wrapper.GetTexture(Edit.name)?.name ?? "");
+        protected override void UpdateSet() =>
+            Value.SetText(Wrapper.GetTexture(Edit.name)?.name ?? "");
     }
     internal class EditView
     {
@@ -515,9 +461,8 @@ namespace SardineHead
             (Wrapper, Toggle, Panel) = (wrapper, toggle, panel);
         internal EditView(string name, MaterialWrapper wrapper, GameObject toggle, Transform parent) :
             this(wrapper, toggle, new GameObject(name)
-                .With(parent.Wrap).With(UI.Inactive)
-                .With(UI.FitLayout<VerticalLayoutGroup>)
-                .With(UI.Configure<VerticalLayoutGroup>(ui => ui.childAlignment = TextAnchor.UpperLeft))) =>
+                .With(parent.Wrap).With(UI.Active.Apply(false))
+                .With(UI.ContentLayout<VerticalLayoutGroup>(TextAnchor.UpperLeft).Apply(0).Apply(new (5,15,5,5)))) =>
             Edits = RendererEdits().Concat(Wrapper.Properties.Select(entry => (CommonEdit)(entry.Value switch
             {
                 ShaderPropertyType.Int => new IntEdit(entry.Key, Panel.transform, Wrapper),
@@ -552,9 +497,8 @@ namespace SardineHead
         GameObject Toggles;
         internal EditGroup(string name, Transform listParent) =>
             Toggles = new GameObject(name).With(listParent.Wrap)
-                .With(UI.FitLayout<VerticalLayoutGroup>)
-                .With(UI.Configure<VerticalLayoutGroup>(ui => ui.padding = new(10, 10, 0, 10)))
-                .With(UI.Label, 290, name);
+                .With(UI.ContentLayout<VerticalLayoutGroup>(TextAnchor.UpperLeft).Apply(0).Apply(new(15, 15, 5, 5)))
+                .With(UI.Label.Apply(270).Apply(name));
         internal void Initialize(Dictionary<string, MaterialWrapper> wrappers, Transform editParent) =>
             Toggles.active = (EditViews = wrappers.With(Dispose)
                 .Select(entry => new EditView(entry.Key, entry.Value,
@@ -628,7 +572,7 @@ namespace SardineHead
             Accessories = AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
         };
         void SetState(GameObject go) =>
-            UniTask.NextFrame().ContinueWith((Action)(() => go.active = Status.Value));
+            UI.OnCustomHumanReady.Apply(UI.Active.Apply(true).Apply(go));
         Action<Unit> ToggleActive(GameObject go) =>
             _ => Toggle.With(Update).Value.IsDown().Maybe(() => go.SetActive(Status.Value = !Status.Value));
         static ConfigEntry<KeyboardShortcut> Toggle { get; set; }
@@ -644,7 +588,7 @@ namespace SardineHead
         void OnCharacterDeserialize(Human human, CharaLimit limits, ZipArchive archive, ZipArchive storage) =>
             Apply(human.Transform(limits.Merge(archive.LoadTextures().LoadChara(), storage.LoadChara()).With(storage.Save)));
         void OnCoordinateDeserialize(Human human, HumanDataCoordinate coord, CoordLimit limits, ZipArchive archive) =>
-            Apply(limits.Merge(archive.LoadTextures().LoadCoord(), human.Transform(human.ToArchive().LoadChara())));
+            human.ReferenceExtension(current => Apply(limits.Merge(archive.LoadTextures().LoadCoord(), human.Transform(current.LoadChara()))));
         void Update(IEnumerable<EditGroup> groups) => groups.Do(group => group.Update());
         void Update() => Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
         internal static EditWindow Instance;
@@ -692,14 +636,15 @@ namespace SardineHead
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
             new ModApplicator(human.data, archive.LoadChara().Transform(type));
         static void OnPreCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive) =>
-            new ModApplicator(human.data, human.Transform(limits.Merge(human,
-                archive.LoadTextures().LoadCoord(), human.ToArchive().LoadTextures().LoadChara())));
+            human.ReferenceExtension(current =>
+                new ModApplicator(human.data, human.Transform(limits.Merge(human,
+                    archive.LoadTextures().LoadCoord(), current.LoadTextures().LoadChara()))));
         static void OnPostActorHumanize(SaveData.Actor actor, Human human, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(() => applicator.Cleanup(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         static void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(() => applicator.Cleanup(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         static void OnPostCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(() => applicator.Cleanup(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         internal static void Initialize()
         {
             Event.OnPreActorHumanize += OnPreActorHumanize;
