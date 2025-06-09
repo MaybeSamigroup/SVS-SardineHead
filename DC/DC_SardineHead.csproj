@@ -75,6 +75,10 @@
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="Fishbone">
+			<HintPath>$(GamePath)\BepInEx\plugins\DC_CoastalSmell.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="Fishbone">
 			<HintPath>$(GamePath)\BepInEx\plugins\DC_Fishbone.dll</HintPath>
 			<Private>False</Private>
 		</Reference>

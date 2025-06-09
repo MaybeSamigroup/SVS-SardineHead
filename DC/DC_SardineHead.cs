@@ -5,6 +5,7 @@ using System.IO.Compression;
 using Character;
 using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Fishbone;
+using CoastalSmell;
 
 namespace SardineHead
 {
@@ -13,10 +14,10 @@ namespace SardineHead
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
             new ModApplicator(human.data, archive.LoadChara().Transform(type));
         static void OnPreCharacterDeserialize(HumanData data, ZipArchive archive) =>
-            new ModApplicator(data, data.Transform(archive.LoadTextures().LoadChara()));
+            new ModApplicator(data, data.Transform(archive.With(Textures.LoadTextures).LoadChara()));
         static void OnPreCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
             new ModApplicator(human.data, human.Transform(limits.Merge(human,
-                archive.LoadTextures().LoadCoord(), storage.LoadChara()).With(storage.Save)));
+                archive.With(Textures.LoadTextures).LoadCoord(), storage.LoadChara()).With(storage.Save)));
         static void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
             Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         static void OnPostCharacterDeserialize(Human human, ZipArchive archive) =>

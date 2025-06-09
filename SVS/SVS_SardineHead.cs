@@ -18,9 +18,10 @@ using Character;
 using CharacterCreation;
 using CharaLimit = Character.HumanData.LoadLimited.Flags;
 using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
-using Fishbone;
 using ImportDialog = System.Windows.Forms.OpenFileDialog;
 using ExportDialog = System.Windows.Forms.SaveFileDialog;
+using Fishbone;
+using CoastalSmell;
 
 namespace SardineHead
 {
@@ -416,32 +417,35 @@ namespace SardineHead
         TextMeshProUGUI Value => Edit.GetComponentsInChildren<TextMeshProUGUI>()[1];
         Button Import => Edit.GetComponentsInChildren<Button>()[0];
         Button Export => Edit.GetComponentsInChildren<Button>()[1];
-        bool TryGetFilePath<T>(Func<T> ctor, string subpath, string name, out string path) where T : System.Windows.Forms.FileDialog
+        Texture Texture
         {
-            using (var dialog = ctor())
-            {
-                (dialog.InitialDirectory, dialog.Filter, dialog.FileName) =
-                    (Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Guid, subpath), "Texture Sources|*.png", $"{name}.png");
-                return (dialog.ShowDialog(), path = dialog.FileName) is (System.Windows.Forms.DialogResult.OK, _);
-            }
+            get => Wrapper.GetTexture(Edit.name);
+            set => Wrapper.SetTexture(Edit.name, value);
         }
-        Action OnExport => () => Wrapper.GetTexture(Edit.name)
-            .With(value => TryGetFilePath(() => new ExportDialog(), "export", value?.name ?? "na.png", out var path)
-                .Maybe(() => path.TextureToFile(value)));
-        Action OnImport => () => Wrapper.GetTexture(Edit.name)
-            .With(value => TryGetFilePath(() => new ImportDialog(), "import", value?.name ?? "na.png", out var path)
-                .Maybe(() => Wrapper.SetTexture(Edit.name, path.FileToTexture())));
+        Action Dialog<T>(string path, Action<string> action) where T : System.Windows.Forms.FileDialog, new() =>
+            TryGetFilePath<T>(action).ApplyDisposable(new T()
+            {
+                InitialDirectory = Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Guid, path),
+                Filter = "Texture Sources|*.png",
+                FileName = $"{Texture?.name ?? "na"}.png",
+            });
+        Action<T> TryGetFilePath<T>(Action<string> action) where T : System.Windows.Forms.FileDialog =>
+            dialog => (dialog.ShowDialog() is System.Windows.Forms.DialogResult.OK).Maybe(action.Apply(dialog.FileName));
+        Action<string> ExportTexture => path => Textures.ToFile(Texture, path);
+        Action<string> ImportTexture => path => Texture = Textures.FromFile(path);
+        Action OnExport => Dialog<ExportDialog>("export", ExportTexture);
+        Action OnImport => Dialog<ImportDialog>("import", ImportTexture); 
         internal TextureEdit(string name, Transform parent, MaterialWrapper wrapper) : base(name, parent, wrapper)
         {
             Import.onClick.AddListener(OnImport);
             Export.onClick.AddListener(OnExport);
         }
         internal override void Store(Modifications mod) =>
-           (Check && Value.text.IsExtensionTexture())
+           (Check && Textures.IsExtension(Value.text))
             .Maybe(() => mod.TextureHashes[Edit.name] = Wrapper.GetTexture(Edit.name)?.name ?? "");
         internal override void Apply(Modifications mod) =>
             (Check = mod.TextureHashes.TryGetValue(Edit.name, out var value))
-                .Maybe(() => Wrapper.SetTexture(Edit.name, (Value.text = value).HashToTexture()));
+                .Maybe(Wrapper.SetTexture.Apply(Edit.name).Apply(Textures.FromHash(Value.text = value)));
         internal override void Update() =>
             Export.With(base.Update).interactable = Wrapper.GetTexture(Edit.name) is not null;
         protected override void UpdateGet() =>
@@ -586,9 +590,9 @@ namespace SardineHead
         void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
             Apply(human.Transform(archive.LoadChara()));
         void OnCharacterDeserialize(Human human, CharaLimit limits, ZipArchive archive, ZipArchive storage) =>
-            Apply(human.Transform(limits.Merge(archive.LoadTextures().LoadChara(), storage.LoadChara()).With(storage.Save)));
+            Apply(human.Transform(limits.Merge(archive.With(Textures.LoadTextures).LoadChara(), storage.LoadChara()).With(storage.Save)));
         void OnCoordinateDeserialize(Human human, HumanDataCoordinate coord, CoordLimit limits, ZipArchive archive) =>
-            human.ReferenceExtension(current => Apply(limits.Merge(archive.LoadTextures().LoadCoord(), human.Transform(current.LoadChara()))));
+            human.ReferenceExtension(current => Apply(limits.Merge(archive.With(Textures.LoadTextures).LoadCoord(), human.Transform(current.LoadChara()))));
         void Update(IEnumerable<EditGroup> groups) => groups.Do(group => group.Update());
         void Update() => Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
         internal static EditWindow Instance;
@@ -598,8 +602,9 @@ namespace SardineHead
             UI.AnchorY = Plugin.Instance.Config.Bind("General", "Window AnchorY", -80.0f);
             Status = Plugin.Instance.Config.Bind("General", "Show Sardin Head (smells fishy)", false);
             Toggle = Plugin.Instance.Config.Bind("General", "Sardin Head toggle key", new KeyboardShortcut(KeyCode.S, KeyCode.LeftControl));
-            Util.Hook<HumanCustom>(() =>
+            Util<HumanCustom>.Hook(() =>
             {
+                Plugin.Instance.Log.LogInfo("CustomInstantiate");
                 Instance = new EditWindow();
                 Event.OnCharacterSerialize += Instance.OnCharacterSerialize;
                 Event.OnCoordinateSerialize += Instance.OnCoordinateSerialize;
@@ -614,6 +619,7 @@ namespace SardineHead
                 Hooks.OnAccessoryChange += Instance.OnAccessoryChange;
             }, () =>
             {
+                Plugin.Instance.Log.LogInfo("CustomDestroyed");
                 Event.OnCharacterSerialize -= Instance.OnCharacterSerialize;
                 Event.OnCoordinateSerialize -= Instance.OnCoordinateSerialize;
                 Event.OnPreCoordinateReload -= Instance.OnPreCoordinateReload;
@@ -632,13 +638,13 @@ namespace SardineHead
     partial class ModApplicator
     {
         static void OnPreActorHumanize(SaveData.Actor actor, HumanData data, ZipArchive archive) =>
-            new ModApplicator(data, actor.charFile.Transform(archive.LoadTextures().LoadChara()));
+            new ModApplicator(data, actor.charFile.Transform(archive.With(Textures.LoadTextures).LoadChara()));
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
             new ModApplicator(human.data, archive.LoadChara().Transform(type));
         static void OnPreCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive) =>
             human.ReferenceExtension(current =>
                 new ModApplicator(human.data, human.Transform(limits.Merge(human,
-                    archive.LoadTextures().LoadCoord(), current.LoadTextures().LoadChara()))));
+                    archive.With(Textures.LoadTextures).LoadCoord(), current.With(Textures.LoadTextures).LoadChara()))));
         static void OnPostActorHumanize(SaveData.Actor actor, Human human, ZipArchive archive) =>
             Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         static void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
@@ -653,7 +659,7 @@ namespace SardineHead
             Event.OnPostActorHumanize += OnPostActorHumanize;
             Event.OnPostCoordinateReload += OnPostCoordinateReload;
             Event.OnPostCoordinateDeserialize += OnPostCoordinateDeserialize;
-            Util.Hook<HumanCustom>(() =>
+            Util<HumanCustom>.Hook(() =>
             {
                 Event.OnPreActorHumanize -= OnPreActorHumanize;
                 Event.OnPreCoordinateReload -= OnPreCoordinateReload;

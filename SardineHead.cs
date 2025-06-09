@@ -17,7 +17,7 @@ using Character;
 using CharaLimit = Character.HumanData.LoadLimited.Flags;
 using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Mods = System.Collections.Generic.Dictionary<string, SardineHead.Modifications>;
-using Fishbone;
+using CoastalSmell;
 
 namespace SardineHead
 {
@@ -137,7 +137,7 @@ namespace SardineHead
                 JsonNumberHandling.AllowNamedFloatingPointLiterals,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
         };
-        internal static IEnumerable<string> Textures(this CharaMods mods) =>
+        internal static IEnumerable<string> ToTextures(this CharaMods mods) =>
             mods.Face.Values.SelectMany(item => item.TextureHashes.Values)
                 .Concat(mods.Body.Values.SelectMany(item => item.TextureHashes.Values))
                 .Concat(mods.Hairs.Values
@@ -152,7 +152,7 @@ namespace SardineHead
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.TextureHashes.Values));
-        internal static IEnumerable<string> Textures(this CoordMods mods) =>
+        internal static IEnumerable<string> ToTextures(this CoordMods mods) =>
             mods.Face.Values.SelectMany(item => item.TextureHashes.Values)
                 .Concat(mods.Body.Values.SelectMany(item => item.TextureHashes.Values))
                 .Concat(mods.Hairs.Values
@@ -171,9 +171,9 @@ namespace SardineHead
         static void Save<T>(this ZipArchiveEntry entry, T mods) =>
             entry.Open().With(stream => JsonSerializer.Serialize(stream, mods, JsonOpts)).Close();
         internal static void Save(this ZipArchive archive, CharaMods mods) =>
-            archive.With(Clean).With(mods.SaveTextures).CreateEntry(ModsPath).Save(mods);
+            archive.With(Clean).With(Textures.SaveCharaTextures.Apply(mods)).CreateEntry(ModsPath).Save(mods);
         internal static void Save(this ZipArchive archive, CoordMods mods) =>
-            archive.With(Clean).With(mods.SaveTextures).CreateEntry(ModsPath).Save(mods);
+            archive.With(Clean).With(Textures.SaveCoordTextures.Apply(mods)).CreateEntry(ModsPath).Save(mods);
         static T Load<T>(Stream stream) =>
             JsonSerializer.Deserialize<T>(stream, JsonOpts).With(stream.Close);
         static bool TryGet(this ZipArchive archive, string path, out ZipArchiveEntry entry) =>
@@ -325,7 +325,7 @@ namespace SardineHead
             CmpSetVector += (id, _) => rebuild(ctc, id);
             CmpSetTexture += (id, _) => rebuild(ctc, id);
         }
-        internal void Apply(Modifications mods) =>
+        internal Action<Modifications> Apply => mods =>
             mods.With(ApplyInt)
                 .With(ApplyFloat)
                 .With(ApplyRange)
@@ -344,8 +344,8 @@ namespace SardineHead
         void ApplyVector(Modifications mods) =>
             mods.VectorValues.Do(entry => SetVector(entry.Key, entry.Value));
         void ApplyTexture(Modifications mods) =>
-            mods.TextureHashes.Do(entry => SetTexture(entry.Key, entry.Value.HashToTexture()));
-        void ApplyRenderer(Modifications mods) =>
+            mods.TextureHashes.Do(entry => SetTexture(entry.Key, Textures.FromHash(entry.Value)));
+        Action<Modifications> ApplyRenderer => mods =>
             (Renderer != null).Maybe(() => Renderer.enabled = mods.Rendering switch
             {
                 BoolValue.Disabled => false,
@@ -403,66 +403,70 @@ namespace SardineHead
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanAccessory item, int index) =>
             index < item.accessories.Count ? item.accessories[index].Wrap() : new();
     }
-    internal static class TextureExtensions
+    internal static class Textures
     {
         static readonly string LegacyPath = Path.Combine(Plugin.Guid, "textures");
         static readonly string TexturePath = Path.Combine(Plugin.Name, "textures");
-        static Dictionary<string, byte[]> Binaries = new();
-        static void Store(this byte[] input, string hash) =>
-            Binaries.TryAdd(hash, input);
-        static string Store(this byte[] input, out SHA256 sha256) =>
-            Convert.ToHexString((sha256 = SHA256.Create()).ComputeHash(input));
-        static string Store(this byte[] input) =>
-            input.Store(out var sha256).With(sha256.Dispose).With(input.Store);
-        internal static bool IsExtensionTexture(this string value) =>
-            Binaries.ContainsKey(value);
-        internal static RenderTexture HashToTexture(this string value) =>
-            Binaries[value].ToTexture();
-        internal static RenderTexture FileToTexture(this string path) =>
-            File.ReadAllBytes(path).ToTexture();
-        static RenderTexture ToTexture(this byte[] input) =>
-            new Texture2D(256, 256)
-                .With(t2d => ImageConversion.LoadImage(t2d, input))
-                .ToTexture().With(texture => texture.name = Store(input));
-        static RenderTexture ToTexture(this Texture2D input) =>
-            new RenderTexture(input.width, input.height, 0)
-                .With(tex => Graphics.Blit(input, tex));
-        internal static void TextureToFile(this string path, Texture tex) =>
-            File.WriteAllBytes(path, tex.ToTexture2D(RenderTexture.active).EncodeToPNG());
-        static Texture2D ToTexture2D(this Texture tex, RenderTexture org) =>
-            RenderTexture.GetTemporary(tex.width, tex.height)
-                .With(SwitchActive).ToTexture2d(tex, new Texture2D(tex.width, tex.height)).With(org.SwitchActive);
-        static Texture2D ToTexture2d(this RenderTexture tmp, Texture tex, Texture2D t2d) =>
-            t2d.With(Clear).With(tex.Blit(tmp)).With(ReadPixels).With(tmp.ReleaseTemporary);
-        static void Clear() =>
-            GL.Clear(false, true, new Color());
-        static Action Blit(this Texture tex, RenderTexture tmp) =>
-            () => Graphics.Blit(tex, tmp);
-        static void ReadPixels(Texture2D t2d) =>
-            t2d.ReadPixels(new Rect(0, 0, t2d.width, t2d.height), 0, 0);
-        static void SwitchActive(this RenderTexture tex) =>
-            RenderTexture.active = tex;
-        static void ReleaseTemporary(this RenderTexture tmp) =>
-            RenderTexture.ReleaseTemporary(tmp);
-        static void LoadTexture(this string hash, long size, BinaryReader reader) =>
-            Binaries[hash] = reader.ReadBytes((int)size);
-        static void LoadTexture(ZipArchiveEntry entry) =>
-            Plugin.Instance.Log.Try(stream => entry.Name.LoadTexture(entry.Length, new BinaryReader(stream)), entry.Open());
-        static void LoadTextures(this IEnumerable<ZipArchiveEntry> entries) =>
-            entries.Where(entry => entry.FullName.StartsWith(TexturePath) || entry.FullName.StartsWith(LegacyPath))
-                .Where(entry => !Binaries.ContainsKey(entry.Name)).Do(LoadTexture);
-        internal static ZipArchive LoadTextures(this ZipArchive archive) =>
-            archive.With(archive.Entries.LoadTextures);
-        static void SaveTexture(this byte[] bytes, BinaryWriter writer) =>
-            writer.Write(bytes);
-        static void SaveTexture(this string hash, Stream stream) =>
-            new BinaryWriter(stream).With(Binaries[hash].SaveTexture).Close();
-        static void SaveTexture(this ZipArchive archive, string hash) =>
-            archive.CreateEntry(Path.Combine(TexturePath, hash)).Open().With(hash.SaveTexture).Close();
-        internal static void SaveTextures(this CharaMods mods, ZipArchive archive) =>
-            mods.Textures().Do(archive.SaveTexture);
-        internal static void SaveTextures(this CoordMods mods, ZipArchive archive) =>
-            mods.Textures().Do(archive.SaveTexture);
+        static Dictionary<string, byte[]> Buffers = new();
+        internal static Func<string, bool> IsExtension =
+            hash => hash != null && Buffers.ContainsKey(hash);
+        internal static Func<string, RenderTexture> FromHash =
+            hash => IsExtension(hash)? BytesToTexture(Buffers[hash]) : default;
+        internal static Func<string, RenderTexture> FromFile =
+            path => BytesToTexture(File.ReadAllBytes(path));
+        static Action<byte[], string> StoreBuffer =
+            (data, hash) => Buffers.TryAdd(hash, data);
+        static Func<SHA256, byte[], string> ComputeHashAndStore =
+            (sha256, data) => Convert.ToHexString(sha256.ComputeHash(data)).With(StoreBuffer.Apply(data));
+        static Action<byte[], RenderTexture> StoreTexture =
+            (data, texture) => texture.name = ComputeHashAndStore.ApplyDisposable(SHA256.Create())(data);
+        static Action<Texture2D, RenderTexture> GraphicsBlit = Graphics.Blit;
+        static Func<byte[], RenderTexture> BytesToTexture =
+            data => TryBytesToTexture2D(data, out var t2d)
+                ? ToRenderTexture(t2d).With(StoreTexture.Apply(data)) : default;
+        static bool TryBytesToTexture2D(byte[] data, out Texture2D t2d) =>
+            (t2d = new Texture2D(256, 256)).LoadImage(data);
+        static Func<Texture2D, RenderTexture> ToRenderTexture =
+            t2d => new RenderTexture(t2d.width, t2d.height, 0).With(GraphicsBlit.Apply(t2d));
+        internal static Action<Texture, string> ToFile =
+            (tex, path) => File.WriteAllBytes(path, TextureToTexture2d(tex).EncodeToPNG());
+        static Func<Texture, Texture2D> TextureToTexture2d =
+            tex => new Texture2D(tex.width, tex.height)
+                .With(ToTexture2d
+                    .Apply(RenderTexture.active)
+                    .Apply(RenderTexture.GetTemporary(tex.width, tex.height))
+                    .Apply(tex));
+        static Action<RenderTexture, RenderTexture, Texture, Texture2D> ToTexture2d =
+            (org, tmp, tex, t2d) => t2d
+                .With(SwitchActive.Apply(tmp))
+                .With(F.Apply(GL.Clear, false, true, new Color()))
+                .With(F.Apply(Graphics.Blit, tex, tmp))
+                .With(F.Apply(t2d.ReadPixels, new Rect(0, 0, t2d.width, t2d.height), 0, 0))
+                .With(SwitchActive.Apply(org))
+                .With(F.Apply(RenderTexture.ReleaseTemporary, tmp));
+        static Action<RenderTexture> SwitchActive =
+            tex => RenderTexture.active = tex;
+        internal static Action<ZipArchive> LoadTextures =
+            archive => archive.Entries.Where(IsTextureEntry).Where(IsNotBuffered).ForEach(LoadTexture);
+        static Func<ZipArchiveEntry, bool> IsTextureEntry =
+            entry => entry.FullName.StartsWith(TexturePath) || entry.FullName.StartsWith(LegacyPath);
+        static Func<ZipArchiveEntry, bool> IsNotBuffered =
+            entry => !IsExtension(entry.Name);
+        static Action<ZipArchiveEntry> LoadTexture =
+            entry => LoadBuffer.Apply(entry.Name).Apply(entry.Length)
+                .ApplyDisposable(new BinaryReader(entry.Open())).Try(Plugin.Instance.Log.LogError);
+        static Action<string, long, BinaryReader> LoadBuffer =
+            (hash, size, reader) => Buffers[hash] = reader.ReadBytes((int)size);
+        internal static Action<CharaMods, ZipArchive> SaveCharaTextures =
+            (mods, archive) => mods.ToTextures().ForEach(SaveTexture.Apply(archive));
+        internal static Action<CoordMods, ZipArchive> SaveCoordTextures =
+            (mods, archive) => mods.ToTextures().ForEach(SaveTexture.Apply(archive));
+        static Action<ZipArchive, string> SaveTexture =
+            (archive, hash) => SaveTextureToArchive.Apply(Buffers[hash])
+                .ApplyDisposable(new BinaryWriter(archive.CreateEntry(Path.Combine(TexturePath, hash)).Open()))
+                .Try(Plugin.Instance.Log.LogError);
+        static Action<byte[], BinaryWriter> SaveTextureToArchive =
+            (data, writer) => writer.Write(data);
     }
     partial class ModApplicator
     {
