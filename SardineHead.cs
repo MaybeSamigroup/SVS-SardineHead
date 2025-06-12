@@ -1,14 +1,9 @@
 using HarmonyLib;
-using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using System;
-using System.IO;
-using System.IO.Compression;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Linq;
+using System.IO.Compression;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using UniRx;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -18,6 +13,7 @@ using CharaLimit = Character.HumanData.LoadLimited.Flags;
 using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Mods = System.Collections.Generic.Dictionary<string, SardineHead.Modifications>;
 using CoastalSmell;
+using Fishbone;
 
 namespace SardineHead
 {
@@ -56,7 +52,8 @@ namespace SardineHead
         public Dictionary<string, Quad> VectorValues { get; init; } = new();
         public Dictionary<string, string> TextureHashes { get; init; } = new();
     }
-    public class LegacyCharaMods
+    [BoneToStuck(Plugin.Guid, "modifications.json")]
+    public partial class LegacyCharaMods
     {
         public Mods Face { get; set; } = new();
         public Mods Eyebrows { get; set; } = new();
@@ -66,173 +63,46 @@ namespace SardineHead
         public Mods Body { get; set; } = new();
         public Mods Nails { get; set; } = new();
         public Dictionary<int, LegacyCoordMods> Coordinates { get; set; } = new();
-
-        public static implicit operator CharaMods(LegacyCharaMods mods) => new()
-        {
-            Face = mods.Face
-                .Select(entry => entry.Key.StartsWith("p_") ? new("/ct_face", entry.Value) : entry)
-                .Concat(mods.Eyebrows)
-                .Concat(mods.Eyelines)
-                .Concat(mods.Eyes)
-                .Concat(mods.Tooth)
-                .DistinctBy(entry => entry.Key)
-                .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Body = mods.Body
-                .Select(entry => entry.Key.StartsWith("p_") ? new("/ct_body", entry.Value) : entry)
-                .Concat(mods.Nails)
-                .DistinctBy(entry => entry.Key)
-                .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Hairs = mods.Coordinates
-                .ToDictionary(entry => entry.Key, entry => entry.Value.Hair),
-            Clothes = mods.Coordinates
-                .ToDictionary(entry => entry.Key, entry => entry.Value.Clothes
-                    .ToDictionary(entry => entry.Key, entry => entry.Value
-                        .ToDictionary(entry => entry.Key.StartsWith("ct_") ? $"/{entry.Key}" : entry.Key, entry => entry.Value))),
-            Accessories = mods.Coordinates
-                .ToDictionary(entry => entry.Key, entry => entry.Value.Accessory),
-        };
     }
-    public class LegacyCoordMods
+    [BoneToStuck(Plugin.Guid, "modifications.json")]
+    public partial class LegacyCoordMods
     {
         public Dictionary<int, Mods> Hair { get; set; } = new();
         public Dictionary<int, Mods> Clothes { get; set; } = new();
         public Dictionary<int, Mods> Accessory { get; set; } = new();
-
-        public static implicit operator CoordMods(LegacyCoordMods mods) => new()
-        {
-            Face = new(),
-            Body = new(),
-            Hairs = mods.Hair,
-            Clothes = mods.Clothes.ToDictionary(entry => entry.Key, entry => entry.Value
-                .ToDictionary(entry => entry.Key.StartsWith("ct_") ? $"/{entry.Key}" : entry.Key, entry => entry.Value)),
-            Accessories = mods.Accessory
-        };
     }
-    public class CharaMods
+    [BoneToStuck(Plugin.Name, "modifications.json")]
+    public partial class CharaMods
     {
         public Mods Face { get; set; } = new();
         public Mods Body { get; set; } = new();
         public Dictionary<int, Dictionary<int, Mods>> Hairs { get; set; } = new();
         public Dictionary<int, Dictionary<int, Mods>> Clothes { get; set; } = new();
         public Dictionary<int, Dictionary<int, Mods>> Accessories { get; set; } = new();
+        internal CoordMods AsCoord(Human human) => AsCoord(human.data);
+        internal CoordMods AsCoord(HumanData data) => AsCoord(data.Status.coordinateType);
+        internal partial CoordMods AsCoord(int index);
+        internal partial Func<CharaMods,CharaMods> Merge(CharaLimit limits);
+        internal Func<CoordLimit, CoordMods, CharaMods> Merge(Human human) => Merge(human.data);
+        internal Func<CoordLimit, CoordMods, CharaMods> Merge(HumanData data) => Merge(data.Status.coordinateType);
+        internal partial Func<CoordLimit, CoordMods, CharaMods> Merge(int index);
+        internal static Func<ZipArchive, CharaMods> Load;
+        internal static Action<ZipArchive, CharaMods> Save;
     }
-    public class CoordMods
+    [BoneToStuck(Plugin.Name, "modifications.json")]
+    public partial class CoordMods
     {
         public Mods Face { get; set; } = new();
         public Mods Body { get; set; } = new();
         public Dictionary<int, Mods> Hairs { get; set; } = new();
         public Dictionary<int, Mods> Clothes { get; set; } = new();
         public Dictionary<int, Mods> Accessories { get; set; } = new();
+        internal partial Func<CoordMods, CoordMods> Merge(CoordLimit limits);
+        internal static Func<ZipArchive, CoordMods> Load;
+        internal static Action<ZipArchive, CoordMods> Save;
     }
     internal static class ModificationExtensions
     {
-        static readonly string LegacyPath = Path.Combine(Plugin.Guid, "modifications.json");
-        static readonly string ModsPath = Path.Combine(Plugin.Name, "modifications.json");
-        internal static readonly JsonSerializerOptions JsonOpts = new()
-        {
-            WriteIndented = true,
-            NumberHandling =
-                JsonNumberHandling.WriteAsString |
-                JsonNumberHandling.AllowReadingFromString |
-                JsonNumberHandling.AllowNamedFloatingPointLiterals,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
-        };
-        internal static IEnumerable<string> ToTextures(this CharaMods mods) =>
-            mods.Face.Values.SelectMany(item => item.TextureHashes.Values)
-                .Concat(mods.Body.Values.SelectMany(item => item.TextureHashes.Values))
-                .Concat(mods.Hairs.Values
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.TextureHashes.Values))
-                .Concat(mods.Clothes.Values
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.TextureHashes.Values))
-                .Concat(mods.Accessories.Values
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.TextureHashes.Values));
-        internal static IEnumerable<string> ToTextures(this CoordMods mods) =>
-            mods.Face.Values.SelectMany(item => item.TextureHashes.Values)
-                .Concat(mods.Body.Values.SelectMany(item => item.TextureHashes.Values))
-                .Concat(mods.Hairs.Values
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.TextureHashes.Values))
-                .Concat(mods.Clothes.Values
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.TextureHashes.Values))
-                .Concat(mods.Accessories.Values
-                    .SelectMany(item => item.Values)
-                    .SelectMany(item => item.TextureHashes.Values));
-        static void Clean(ZipArchive archive) =>
-            archive.Entries
-                .Where(entry => entry.FullName.StartsWith(Plugin.Guid) || entry.FullName.StartsWith(Plugin.Name))
-                .ToList().Do(entry => entry.Delete());
-        static void Save<T>(this ZipArchiveEntry entry, T mods) =>
-            entry.Open().With(stream => JsonSerializer.Serialize(stream, mods, JsonOpts)).Close();
-        internal static void Save(this ZipArchive archive, CharaMods mods) =>
-            archive.With(Clean).With(Textures.SaveCharaTextures.Apply(mods)).CreateEntry(ModsPath).Save(mods);
-        internal static void Save(this ZipArchive archive, CoordMods mods) =>
-            archive.With(Clean).With(Textures.SaveCoordTextures.Apply(mods)).CreateEntry(ModsPath).Save(mods);
-        static T Load<T>(Stream stream) =>
-            JsonSerializer.Deserialize<T>(stream, JsonOpts).With(stream.Close);
-        static bool TryGet(this ZipArchive archive, string path, out ZipArchiveEntry entry) =>
-            (entry = archive.GetEntry(path)) != null;
-        internal static CharaMods LoadChara(this ZipArchive archive) =>
-            archive.TryGet(ModsPath, out var entry) ? Load<CharaMods>(entry.Open()) :
-            archive.TryGet(LegacyPath, out var legacy) ? Load<LegacyCharaMods>(legacy.Open()) : new();
-        internal static CoordMods LoadCoord(this ZipArchive archive) =>
-            archive.TryGet(ModsPath, out var entry) ? Load<CoordMods>(entry.Open()) :
-            archive.TryGet(LegacyPath, out var legacy) ? Load<LegacyCoordMods>(legacy.Open()) : new();
-        internal static CoordMods Transform(this Human human, CharaMods mods) =>
-            human.data.Transform(mods);
-        internal static CoordMods Transform(this HumanData data, CharaMods mods) =>
-            mods.Transform(data.Status.coordinateType);
-        internal static CoordMods Transform(this CharaMods mods, int index) => new()
-        {
-            Face = mods.Face,
-            Body = mods.Body,
-            Hairs = mods.Hairs.TryGetValue(index, out var hairs) ? hairs : new(),
-            Clothes = mods.Clothes.TryGetValue(index, out var clothes) ? clothes : new(),
-            Accessories = mods.Accessories.TryGetValue(index, out var accessories) ? accessories : new(),
-        };
-        internal static CharaMods Merge(this CharaLimit limits, CharaMods src, CharaMods dst) => new()
-        {
-            Face = (limits & CharaLimit.Face) == CharaLimit.None ? dst.Face : src.Face,
-            Body = (limits & CharaLimit.Body) == CharaLimit.None ? dst.Body : src.Body,
-            Hairs = (limits & CharaLimit.Hair) == CharaLimit.None ? dst.Hairs : src.Hairs,
-            Clothes = (limits & CharaLimit.Coorde) == CharaLimit.None ? dst.Clothes : src.Clothes,
-            Accessories = (limits & CharaLimit.Coorde) == CharaLimit.None ? dst.Accessories : src.Accessories,
-        };
-        internal static CoordMods Merge(this CoordLimit limit, CoordMods src, CoordMods dst) => new()
-        {
-            Face = (limit & CoordLimit.FaceMakeup) == CoordLimit.None ? dst.Face : src.Face,
-            Body = (limit & CoordLimit.BodyMakeup) == CoordLimit.None ? dst.Body : src.Body,
-            Hairs = (limit & CoordLimit.Hair) == CoordLimit.None ? dst.Hairs : src.Hairs,
-            Clothes = (limit & CoordLimit.Clothes) == CoordLimit.None ? dst.Clothes : src.Clothes,
-            Accessories = (limit & CoordLimit.Accessory) == CoordLimit.None ? dst.Accessories : src.Accessories
-        };
-        internal static CharaMods Merge(this CoordLimit limit, Human human, CoordMods src, CharaMods dst) =>
-            limit.Merge(human.data, src, dst);
-        internal static CharaMods Merge(this CoordLimit limit, HumanData data, CoordMods src, CharaMods dst) =>
-            limit.Merge(data.Status.coordinateType, src, dst);
-        static CharaMods Merge(this CoordLimit limit, int index, CoordMods src, CharaMods dst) => new()
-        {
-            Face = (limit & CoordLimit.FaceMakeup) == CoordLimit.None ? dst.Face : src.Face,
-            Body = (limit & CoordLimit.BodyMakeup) == CoordLimit.None ? dst.Body : src.Body,
-            Hairs = (limit & CoordLimit.Hair) == CoordLimit.None ? dst.Hairs :
-                dst.Hairs.Where(entry => entry.Key != index)
-                    .Concat([new(index, src.Hairs)])
-                    .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Clothes = (limit & CoordLimit.Clothes) == CoordLimit.None ? dst.Clothes :
-                dst.Clothes.Where(entry => entry.Key != index)
-                    .Concat([new(index, src.Clothes)])
-                    .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Accessories = (limit & CoordLimit.Accessory) == CoordLimit.None ? dst.Accessories :
-                dst.Accessories.Where(entry => entry.Key != index)
-                    .Concat([new(index, src.Accessories)])
-                    .ToDictionary(entry => entry.Key, entry => entry.Value),
-        };
         internal static void Apply(this Dictionary<string, MaterialWrapper> wrappers, Mods mods) =>
             wrappers.Do(entry => entry.Value.Apply(mods.TryGetValue(entry.Key, out var value) ? value : new()));
         internal static void Apply(this HumanBody item, CoordMods mods) =>
@@ -403,70 +273,14 @@ namespace SardineHead
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanAccessory item, int index) =>
             index < item.accessories.Count ? item.accessories[index].Wrap() : new();
     }
-    internal static class Textures
+    internal static partial class Textures
     {
-        static readonly string LegacyPath = Path.Combine(Plugin.Guid, "textures");
-        static readonly string TexturePath = Path.Combine(Plugin.Name, "textures");
-        static Dictionary<string, byte[]> Buffers = new();
-        internal static Func<string, bool> IsExtension =
-            hash => hash != null && Buffers.ContainsKey(hash);
-        internal static Func<string, RenderTexture> FromHash =
-            hash => IsExtension(hash)? BytesToTexture(Buffers[hash]) : default;
-        internal static Func<string, RenderTexture> FromFile =
-            path => BytesToTexture(File.ReadAllBytes(path));
-        static Action<byte[], string> StoreBuffer =
-            (data, hash) => Buffers.TryAdd(hash, data);
-        static Func<SHA256, byte[], string> ComputeHashAndStore =
-            (sha256, data) => Convert.ToHexString(sha256.ComputeHash(data)).With(StoreBuffer.Apply(data));
-        static Action<byte[], RenderTexture> StoreTexture =
-            (data, texture) => texture.name = ComputeHashAndStore.ApplyDisposable(SHA256.Create())(data);
-        static Action<Texture2D, RenderTexture> GraphicsBlit = Graphics.Blit;
-        static Func<byte[], RenderTexture> BytesToTexture =
-            data => TryBytesToTexture2D(data, out var t2d)
-                ? ToRenderTexture(t2d).With(StoreTexture.Apply(data)) : default;
-        static bool TryBytesToTexture2D(byte[] data, out Texture2D t2d) =>
-            (t2d = new Texture2D(256, 256)).LoadImage(data);
-        static Func<Texture2D, RenderTexture> ToRenderTexture =
-            t2d => new RenderTexture(t2d.width, t2d.height, 0).With(GraphicsBlit.Apply(t2d));
-        internal static Action<Texture, string> ToFile =
-            (tex, path) => File.WriteAllBytes(path, TextureToTexture2d(tex).EncodeToPNG());
-        static Func<Texture, Texture2D> TextureToTexture2d =
-            tex => new Texture2D(tex.width, tex.height)
-                .With(ToTexture2d
-                    .Apply(RenderTexture.active)
-                    .Apply(RenderTexture.GetTemporary(tex.width, tex.height))
-                    .Apply(tex));
-        static Action<RenderTexture, RenderTexture, Texture, Texture2D> ToTexture2d =
-            (org, tmp, tex, t2d) => t2d
-                .With(SwitchActive.Apply(tmp))
-                .With(F.Apply(GL.Clear, false, true, new Color()))
-                .With(F.Apply(Graphics.Blit, tex, tmp))
-                .With(F.Apply(t2d.ReadPixels, new Rect(0, 0, t2d.width, t2d.height), 0, 0))
-                .With(SwitchActive.Apply(org))
-                .With(F.Apply(RenderTexture.ReleaseTemporary, tmp));
-        static Action<RenderTexture> SwitchActive =
-            tex => RenderTexture.active = tex;
-        internal static Action<ZipArchive> LoadTextures =
-            archive => archive.Entries.Where(IsTextureEntry).Where(IsNotBuffered).ForEach(LoadTexture);
-        static Func<ZipArchiveEntry, bool> IsTextureEntry =
-            entry => entry.FullName.StartsWith(TexturePath) || entry.FullName.StartsWith(LegacyPath);
-        static Func<ZipArchiveEntry, bool> IsNotBuffered =
-            entry => !IsExtension(entry.Name);
-        static Action<ZipArchiveEntry> LoadTexture =
-            entry => LoadBuffer.Apply(entry.Name).Apply(entry.Length)
-                .ApplyDisposable(new BinaryReader(entry.Open())).Try(Plugin.Instance.Log.LogError);
-        static Action<string, long, BinaryReader> LoadBuffer =
-            (hash, size, reader) => Buffers[hash] = reader.ReadBytes((int)size);
-        internal static Action<CharaMods, ZipArchive> SaveCharaTextures =
-            (mods, archive) => mods.ToTextures().ForEach(SaveTexture.Apply(archive));
-        internal static Action<CoordMods, ZipArchive> SaveCoordTextures =
-            (mods, archive) => mods.ToTextures().ForEach(SaveTexture.Apply(archive));
-        static Action<ZipArchive, string> SaveTexture =
-            (archive, hash) => SaveTextureToArchive.Apply(Buffers[hash])
-                .ApplyDisposable(new BinaryWriter(archive.CreateEntry(Path.Combine(TexturePath, hash)).Open()))
-                .Try(Plugin.Instance.Log.LogError);
-        static Action<byte[], BinaryWriter> SaveTextureToArchive =
-            (data, writer) => writer.Write(data);
+        internal static Func<string, bool> IsExtension;
+        internal static Func<string, RenderTexture> FromHash;
+        internal static Func<string, RenderTexture> FromFile;
+        internal static Action<Texture, string> ToFile;
+        internal static Action<ZipArchive> Load;
+        internal static Action<TextureMods, ZipArchive> Save;
     }
     partial class ModApplicator
     {

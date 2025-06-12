@@ -12,12 +12,12 @@ namespace SardineHead
     partial class ModApplicator
     {
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
-            new ModApplicator(human.data, archive.LoadChara().Transform(type));
+            new ModApplicator(human.data, CharaMods.Load(archive).AsCoord(type));
         static void OnPreCharacterDeserialize(HumanData data, ZipArchive archive) =>
-            new ModApplicator(data, data.Transform(archive.With(Textures.LoadTextures).LoadChara()));
+            new ModApplicator(data, CharaMods.Load(archive).AsCoord(data));
         static void OnPreCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
-            new ModApplicator(human.data, human.Transform(limits.Merge(human,
-                archive.With(Textures.LoadTextures).LoadCoord(), storage.LoadChara()).With(storage.Save)));
+            new ModApplicator(human.data, CharaMods.Load(storage).Merge(human)
+                (limits, CoordMods.Load(archive)).With(CharaMods.Save.Apply(storage)).AsCoord(human));
         static void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
             Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
         static void OnPostCharacterDeserialize(Human human, ZipArchive archive) =>
