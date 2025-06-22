@@ -52,7 +52,7 @@ namespace SardineHead
         public Dictionary<string, Quad> VectorValues { get; init; } = new();
         public Dictionary<string, string> TextureHashes { get; init; } = new();
     }
-    [BoneToStuck(Plugin.Guid, "modifications.json")]
+    [BonesToStuck(Plugin.Guid, "modifications.json")]
     public partial class LegacyCharaMods
     {
         public Mods Face { get; set; } = new();
@@ -64,14 +64,14 @@ namespace SardineHead
         public Mods Nails { get; set; } = new();
         public Dictionary<int, LegacyCoordMods> Coordinates { get; set; } = new();
     }
-    [BoneToStuck(Plugin.Guid, "modifications.json")]
+    [BonesToStuck(Plugin.Guid, "modifications.json")]
     public partial class LegacyCoordMods
     {
         public Dictionary<int, Mods> Hair { get; set; } = new();
         public Dictionary<int, Mods> Clothes { get; set; } = new();
         public Dictionary<int, Mods> Accessory { get; set; } = new();
     }
-    [BoneToStuck(Plugin.Name, "modifications.json")]
+    [BonesToStuck(Plugin.Name, "modifications.json")]
     public partial class CharaMods
     {
         public Mods Face { get; set; } = new();
@@ -89,7 +89,7 @@ namespace SardineHead
         internal static Func<ZipArchive, CharaMods> Load;
         internal static Action<ZipArchive, CharaMods> Save;
     }
-    [BoneToStuck(Plugin.Name, "modifications.json")]
+    [BonesToStuck(Plugin.Name, "modifications.json")]
     public partial class CoordMods
     {
         public Mods Face { get; set; } = new();

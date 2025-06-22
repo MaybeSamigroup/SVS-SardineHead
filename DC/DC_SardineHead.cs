@@ -6,9 +6,14 @@ using Character;
 using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Fishbone;
 using CoastalSmell;
+using UnityEngine;
 
 namespace SardineHead
 {
+    internal static partial class UI
+    {
+        static Transform Root => MainScene.Instance.transform;
+    }
     partial class ModApplicator
     {
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>

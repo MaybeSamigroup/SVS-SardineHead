@@ -11,6 +11,7 @@
 	<ItemGroup>
 		<Compile Include="..\SardineHead.cs"/>
 		<Compile Include="..\Modifications.cs"/>
+		<Compile Include="..\UserInterface.cs"/>
 		<Reference Include="0Harmony">
 			<HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath>
 			<Private>False</Private>
@@ -33,6 +34,10 @@
 		</Reference>
 		<Reference Include="UnityEngine.CoreModule">
 			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UnityEngine.CoreModule.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="UnityEngine.AssetBundleModule">
+			<HintPath>$(GamePath)\BepInEx\$(GameName)\interop\UnityEngine.AssetBundleModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 		<Reference Include="UnityEngine.UIModule">

@@ -104,10 +104,10 @@ namespace SardineHead
         static CharaMods()
         {
             Load = archive =>
-                BoneToStuck<CharaMods>.Load(archive.With(Textures.Load), out var mods) ? mods :
-                    BoneToStuck<LegacyCharaMods>.Load(archive, out var legacy) ? legacy : new();
+                BonesToStuck<CharaMods>.Load(archive.With(Textures.Load), out var mods) ? mods :
+                    BonesToStuck<LegacyCharaMods>.Load(archive, out var legacy) ? legacy : new();
             Save = (archive, mods) =>
-                BoneToStuck<CharaMods>.Save(archive.With(Textures.Save.Apply(mods)), mods);
+                BonesToStuck<CharaMods>.Save(archive.With(Textures.Save.Apply(mods)), mods);
         }
     }
     public partial class CoordMods : TextureMods
@@ -134,13 +134,12 @@ namespace SardineHead
         static CoordMods()
         {
             Load = archive =>
-                BoneToStuck<CoordMods>.Load(archive.With(Textures.Load), out var mods) ? mods :
-                    BoneToStuck<LegacyCoordMods>.Load(archive, out var legacy) ? legacy: new ();
+                BonesToStuck<CoordMods>.Load(archive.With(Textures.Load), out var mods) ? mods :
+                    BonesToStuck<LegacyCoordMods>.Load(archive, out var legacy) ? legacy: new ();
             Save = (archive, mods) =>
-                BoneToStuck<CoordMods>.Save(archive.With(Textures.Save.Apply(mods)), mods);
+                BonesToStuck<CoordMods>.Save(archive.With(Textures.Save.Apply(mods)), mods);
         }
     }
-
     internal static partial class Textures
     {
         static readonly string LegacyPath = Path.Combine(Plugin.Guid, "textures");
