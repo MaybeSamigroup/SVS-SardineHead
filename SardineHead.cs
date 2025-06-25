@@ -14,6 +14,7 @@ using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Mods = System.Collections.Generic.Dictionary<string, SardineHead.Modifications>;
 using CoastalSmell;
 using Fishbone;
+using UniRx.Triggers;
 
 namespace SardineHead
 {
@@ -82,7 +83,7 @@ namespace SardineHead
         internal CoordMods AsCoord(Human human) => AsCoord(human.data);
         internal CoordMods AsCoord(HumanData data) => AsCoord(data.Status.coordinateType);
         internal partial CoordMods AsCoord(int index);
-        internal partial Func<CharaMods,CharaMods> Merge(CharaLimit limits);
+        internal partial Func<CharaMods, CharaMods> Merge(CharaLimit limits);
         internal Func<CoordLimit, CoordMods, CharaMods> Merge(Human human) => Merge(human.data);
         internal Func<CoordLimit, CoordMods, CharaMods> Merge(HumanData data) => Merge(data.Status.coordinateType);
         internal partial Func<CoordLimit, CoordMods, CharaMods> Merge(int index);
@@ -105,22 +106,29 @@ namespace SardineHead
     {
         internal static void Apply(this Dictionary<string, MaterialWrapper> wrappers, Mods mods) =>
             wrappers.Do(entry => entry.Value.Apply(mods.TryGetValue(entry.Key, out var value) ? value : new()));
-        internal static void Apply(this HumanBody item, CoordMods mods) =>
+        internal static Action Apply(this Human item, CoordMods mods) =>
+            F.Apply(Apply, item.body, mods) +
+            F.Apply(Apply, item.face, mods) +
+            F.Apply(Apply, item.hair, mods) +
+            F.Apply(Apply, item.cloth, mods) +
+            F.Apply(Apply, item.acs, mods) +
+            (() => Plugin.Instance.Log.LogInfo("Delayed application"));
+        static void Apply(this HumanBody item, CoordMods mods) =>
             item.Wrap()?.Apply(mods.Body);
-        internal static void Apply(this HumanFace item, CoordMods mods) =>
+        static void Apply(this HumanFace item, CoordMods mods) =>
             item.Wrap()?.Apply(mods.Face);
-        static Action<HumanHair.Hair, int, CoordMods> ApplyHair =>
-            (item, index, mods) => mods.Hairs.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
-        static Action<HumanCloth.Clothes, int, CoordMods> ApplyClothes =>
-            (item, index, mods) => mods.Clothes.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
-        static Action<HumanAccessory.Accessory, int, CoordMods> ApplyAccessory =>
-            (item, index, mods) => mods.Accessories.TryGetValue(index, out var value).Maybe(() => item.Wrap()?.Apply(value));
-        internal static void Apply(this HumanHair item, CoordMods mods) =>
-            item.hairs.Select((child, index) => ApplyHair.Apply(child).Apply(index).Apply(mods)).Do(action => action());
-        internal static void Apply(this HumanCloth item, CoordMods mods) =>
-            item.clothess.Select((child, index) => ApplyClothes.Apply(child).Apply(index).Apply(mods)).Do(action => action());
-        internal static void Apply(this HumanAccessory item, CoordMods mods) =>
-            item.accessories.Select((child, index) => ApplyAccessory.Apply(child).Apply(index).Apply(mods)).Do(action => action());
+        static void Apply(this HumanHair item, CoordMods mods) =>
+           item.hairs.ForEachIndex(mods.Apply);
+        static void Apply(this HumanCloth item, CoordMods mods) =>
+            item.clothess.ForEachIndex(mods.Apply);
+        static void Apply(this HumanAccessory item, CoordMods mods) =>
+            item.accessories.ForEachIndex(mods.Apply); 
+        static void Apply(this CoordMods mods, HumanHair.Hair item, int index) =>
+            mods.Hairs.TryGetValue(index, out var value).Maybe(F.Apply(item.Wrap().Apply, value));
+        static void Apply(this CoordMods mods, HumanCloth.Clothes item, int index) =>
+            mods.Clothes.TryGetValue(index, out var value).Maybe(F.Apply(item.Wrap().Apply, value));
+        static void Apply(this CoordMods mods, HumanAccessory.Accessory item, int index) =>
+            mods.Accessories.TryGetValue(index, out var value).Maybe(F.Apply(item.Wrap().Apply, value));
         internal static bool NotEmpty(this Modifications mods) =>
             mods.IntValues.Count + mods.FloatValues.Count + mods.RangeValues.Count +
             mods.ColorValues.Count + mods.VectorValues.Count + mods.TextureHashes.Count > 0;
@@ -204,17 +212,17 @@ namespace SardineHead
                 .With(ApplyTexture)
                 .With(ApplyRenderer);
         void ApplyInt(Modifications mods) =>
-            mods.IntValues.Do(entry => SetInt(entry.Key, entry.Value));
+            mods.IntValues.ForEach(entry => SetInt(entry.Key, entry.Value));
         void ApplyFloat(Modifications mods) =>
-            mods.FloatValues.Do(entry => SetFloat(entry.Key, entry.Value));
+            mods.FloatValues.ForEach(entry => SetFloat(entry.Key, entry.Value));
         void ApplyRange(Modifications mods) =>
-            mods.RangeValues.Do(entry => SetFloat(entry.Key, entry.Value));
+            mods.RangeValues.ForEach(entry => SetRange(entry.Key, entry.Value));
         void ApplyColor(Modifications mods) =>
-            mods.ColorValues.Do(entry => SetColor(entry.Key, entry.Value));
+            mods.ColorValues.ForEach(entry => SetColor(entry.Key, entry.Value));
         void ApplyVector(Modifications mods) =>
-            mods.VectorValues.Do(entry => SetVector(entry.Key, entry.Value));
+            mods.VectorValues.ForEach(entry => SetVector(entry.Key, entry.Value));
         void ApplyTexture(Modifications mods) =>
-            mods.TextureHashes.Do(entry => SetTexture(entry.Key, Textures.FromHash(entry.Value)));
+            mods.TextureHashes.ForEach(entry => SetTexture(entry.Key, Textures.FromHash(entry.Value)));
         Action<Modifications> ApplyRenderer => mods =>
             (Renderer != null).Maybe(() => Renderer.enabled = mods.Rendering switch
             {
@@ -225,41 +233,42 @@ namespace SardineHead
     }
     internal static class MaterialExtension
     {
-        static IEnumerable<Renderer> ToRenderers(this GameObject go) =>
-            go?.GetComponents<Renderer>().Concat(ToRenderers(go.transform)) ?? [];
-        static IEnumerable<Renderer> ToRenderers(this Transform tf) =>
-            tf == null ? [] : Enumerable.Range(0, tf.childCount)
-                .Select(idx => tf.GetChild(idx).gameObject).SelectMany(ToRenderers);
-        static Dictionary<string, MaterialWrapper> Wrap(this IEnumerable<Renderer> renderers) =>
-            (renderers ?? []).Where(renderer => renderer != null && renderer.material != null)
-                .GroupBy(renderer => renderer.name ?? renderer.gameObject.name)
-                .SelectMany(groups => Identify(groups, 1))
+        static Func<GameObject, IEnumerable<Renderer>> RenderersOfGo =
+            go => go?.GetComponents<Renderer>().Concat(RenderersOfTf(go.transform)) ?? [];
+        static Func<Transform, IEnumerable<Renderer>> RenderersOfTf =
+            tf => tf == null ? [] : Enumerable.Range(0, tf.childCount)
+                .Select(idx => tf.GetChild(idx).gameObject).SelectMany(RenderersOfGo);
+        static Func<IEnumerable<Renderer>, Dictionary<string, MaterialWrapper>> WrapRenderers =
+            renderers => (renderers ?? []).Where(renderer => renderer != null && renderer.material != null)
+                .GroupBy(renderer => renderer.name ?? renderer.gameObject.name).SelectMany(IdentifyGo.Apply(1))
                 .ToDictionary(entry => entry.Item1, entry => new MaterialWrapper(entry.Item2));
-        static IEnumerable<Tuple<string, Renderer>> Identify(IGrouping<string, Renderer> groups, int depth) =>
-            groups.Count() == 1
+        static Func<int, IGrouping<string, Renderer>, IEnumerable<Tuple<string, Renderer>>> IdentifyGo =
+            (depth, groups) => groups.Count() == 1
                 ? groups.Select<Renderer, Tuple<string, Renderer>>(value => new(groups.Key, value))
-                : groups.GroupBy(renderer => $"{Identify(renderer.gameObject.transform, depth)}/{groups.Key}")
-                    .SelectMany(groups => Identify(groups, depth + 1));
-        static string Identify(this Transform tf, int depth) =>
-            depth == 0 ? tf.name : tf.parent.Identify(depth - 1);
-        static void Wrap(this HumanFace face, Dictionary<string, MaterialWrapper> wrappers) =>
-            (face?.customTexCtrlFace != null).Maybe(() => wrappers["/ct_face"] = new MaterialWrapper(face.customTexCtrlFace));
-        static void Wrap(this HumanBody body, Dictionary<string, MaterialWrapper> wrappers) =>
-            (body?.customTexCtrlBody != null).Maybe(() => wrappers["/ct_body"] = new MaterialWrapper(body.customTexCtrlBody));
-        static void Wrap(this HumanCloth.Clothes clothes, Dictionary<string, MaterialWrapper> wrappers) =>
+                : groups.GroupBy(Identify.Apply(depth).Apply(groups.Key)).SelectMany(IdentifyGo.Apply(depth + 1));
+        static Func<int, string, Renderer, string> Identify =
+            (depth, path, renderer) => $"IdentifyTf(depth, renderer.transform)/{path}";
+        static Func<int, Transform, string> IdentifyTf =
+            (depth, tf) => depth == 0 ? tf.name : IdentifyTf(depth - 1, tf.parent);
+        internal static Dictionary<string, MaterialWrapper> WrapCtc(this HumanFace face) =>
+            new (){ ["/ct_face"] = new MaterialWrapper(face.customTexCtrlFace) };
+        internal static Dictionary<string, MaterialWrapper> WrapCtc(this HumanBody body) =>
+            new() { ["/ct_body"] = new MaterialWrapper(body.customTexCtrlBody) };
+        internal static Dictionary<string, MaterialWrapper> WrapCtc(this HumanCloth.Clothes clothes) =>
             Enumerable.Range(0, clothes?.ctCreateClothes?.Count ?? 0)
                 .Where(idx => clothes?.cusClothesCmp != null && clothes?.ctCreateClothes[idx]?._matCreate != null)
-                .Do(idx => wrappers[$"/{clothes.cusClothesCmp.name}{idx}"] = new MaterialWrapper(clothes.ctCreateClothes[idx], clothes.cusClothesCmp.Rebuild01));
+                .ToDictionary(idx => $"/{clothes.cusClothesCmp.name}{idx}",
+                    idx => new MaterialWrapper(clothes.ctCreateClothes[idx], clothes.cusClothesCmp.Rebuild01));
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanFace item) =>
-            item?.objHead?.ToRenderers().Wrap().With(item.Wrap) ?? new();
+            WrapRenderers(RenderersOfGo(item?.objHead)) ?? new();
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanBody item) =>
-            item?.objBody?.ToRenderers().Wrap().With(item.Wrap) ?? new();
+            WrapRenderers(RenderersOfGo(item?.objBody)) ?? new();
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanHair.Hair item) =>
-            item?.cusHairCmp?.gameObject?.ToRenderers().Wrap() ?? new();
+            WrapRenderers(RenderersOfGo(item?.cusHairCmp?.gameObject)) ?? new();
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanCloth.Clothes item) =>
-            item?.cusClothesCmp?.gameObject?.ToRenderers().Wrap().With(item.Wrap) ?? new();
+            WrapRenderers(RenderersOfGo(item?.cusClothesCmp?.gameObject)) ?? new();
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanAccessory.Accessory item) =>
-            item?.cusAcsCmp?.gameObject?.ToRenderers().Wrap() ?? new();
+            WrapRenderers(RenderersOfGo(item?.cusAcsCmp?.gameObject)) ?? new();
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanHair item, int index) =>
             index < item.hairs.Count ? item.hairs[index].Wrap() : new();
         internal static Dictionary<string, MaterialWrapper> Wrap(this HumanCloth item, int index) =>
@@ -289,48 +298,72 @@ namespace SardineHead
         ModApplicator(HumanData data, CoordMods mods)
         {
             Mods = mods;
-            Hooks.OnFaceReady += OnFaceChange;
-            Hooks.OnBodyReady += OnBodyChange;
+            Hooks.OnFaceReady += OnFaceReady;
+            Hooks.OnBodyReady += OnBodyReady;
+            Hooks.OnClothesReady += OnClothesReady;
+            Hooks.OnFaceChange += OnFaceChange;
+            Hooks.OnBodyChange += OnBodyChange;
             Hooks.OnHairChange += OnHairChange;
-            Hooks.OnClothesReady += OnClothesChange;
+            Hooks.OnClothesChange += OnClothesChange;
             Hooks.OnAccessoryChange += OnAccessoryChange;
             Current.TryAdd(data, this);
         }
-        Action<HumanData> Cleanup => data =>
+        Action<Human> Cleanup => human =>
         {
-            Hooks.OnFaceReady -= OnFaceChange;
-            Hooks.OnBodyReady -= OnBodyChange;
+            Hooks.OnFaceReady -= OnFaceReady;
+            Hooks.OnBodyReady -= OnBodyReady;
+            Hooks.OnClothesReady -= OnClothesReady;
+            Hooks.OnFaceChange -= OnFaceChange;
+            Hooks.OnBodyChange -= OnBodyChange;
             Hooks.OnHairChange -= OnHairChange;
-            Hooks.OnClothesReady -= OnClothesChange;
+            Hooks.OnClothesChange -= OnClothesChange;
             Hooks.OnAccessoryChange -= OnAccessoryChange;
-            Current.Remove(data);
+            Current.Remove(human.data);
+            Scheduler.MainThread.Schedule(Il2CppSystem.TimeSpan.FromSeconds(0.05), human.Apply(Mods));
         };
+        void OnFaceReady(HumanFace item) =>
+             (Current.GetValueOrDefault(item.human.data) == this)
+                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Face));
+        void OnBodyReady(HumanBody item) =>
+             (Current.GetValueOrDefault(item.human.data) == this)
+                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Body));
+        void OnClothesReady(HumanCloth item, int index) =>
+             (Current.GetValueOrDefault(item.human.data) == this)
+                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new())));
         void OnFaceChange(HumanFace item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(() => item.Wrap().Apply(Mods.Face));
+                .Maybe(F.Apply(item.Wrap().Apply, Mods.Face));
         void OnBodyChange(HumanBody item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(() => item.Wrap().Apply(Mods.Body));
+                .Maybe(F.Apply(item.Wrap().Apply, Mods.Body));
         void OnHairChange(HumanHair item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this && Mods.Hairs.ContainsKey(index))
-                .Maybe(() => item.hairs[index].Wrap().Apply(Mods.Hairs[index]));
+                .Maybe(F.Apply(item.hairs[index].Wrap().Apply, Mods.Hairs.GetValueOrDefault(index, new())));
         void OnClothesChange(HumanCloth item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this && Mods.Clothes.ContainsKey(index))
-                .Maybe(() => item.clothess[index].Wrap().Apply(Mods.Clothes[index]));
+                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new())));
         void OnAccessoryChange(HumanAccessory item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this && Mods.Accessories.ContainsKey(index))
-                .Maybe(() => item.accessories[index].Wrap().Apply(Mods.Accessories[index]));
+                .Maybe(F.Apply(item.accessories[index].Wrap().Apply, Mods.Accessories.GetValueOrDefault(index, new())));
     }
     static class Hooks
     {
-        internal static event Action<HumanFace> OnFaceChange = delegate { };
-        internal static event Action<HumanBody> OnBodyChange = delegate { };
-        internal static event Action<HumanHair, int> OnHairChange = delegate { };
-        internal static event Action<HumanCloth, int> OnClothesChange = delegate { };
-        internal static event Action<HumanAccessory, int> OnAccessoryChange = delegate { };
-        internal static event Action<HumanFace> OnFaceReady = delegate { };
-        internal static event Action<HumanBody> OnBodyReady = delegate { };
-        internal static event Action<HumanCloth, int> OnClothesReady = delegate { };
+        internal static event Action<HumanFace> OnFaceChange =
+            item => Plugin.Instance.Log.LogDebug($"OnFaceChange:{item.human}");
+        internal static event Action<HumanBody> OnBodyChange =
+            item => Plugin.Instance.Log.LogDebug($"OnBodyChange:{item.human}");
+        internal static event Action<HumanHair, int> OnHairChange =
+            (item, idx) => Plugin.Instance.Log.LogDebug($"OnHairChange:{item.human},{idx}");
+        internal static event Action<HumanCloth, int> OnClothesChange =
+            (item, idx) => Plugin.Instance.Log.LogDebug($"OnClothesChange:{item.human},{idx}");
+        internal static event Action<HumanAccessory, int> OnAccessoryChange =
+            (item, idx) => Plugin.Instance.Log.LogDebug($"OnAccessoryChange:{item.human},{idx}");
+        internal static event Action<HumanFace> OnFaceReady =
+            item => Plugin.Instance.Log.LogDebug($"OnFaceReady:{item.human}");
+        internal static event Action<HumanBody> OnBodyReady =
+            item => Plugin.Instance.Log.LogDebug($"OnBodyReady:{item.human}");
+        internal static event Action<HumanCloth, int> OnClothesReady =
+            (item, idx) => Plugin.Instance.Log.LogDebug($"OnClothesReady:{item.human},{idx}");
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanFace), nameof(HumanFace.ChangeHead), typeof(int), typeof(bool))]

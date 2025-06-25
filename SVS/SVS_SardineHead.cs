@@ -52,13 +52,14 @@ namespace SardineHead
         void Initialize(Dictionary<string, MaterialWrapper> wrappers, EditGroup group) =>
             group.Initialize(wrappers, EditPanel);
         void OnBodyChange(HumanBody item) =>
-            Initialize(item.Wrap(), BodyGroup);
+            Initialize(item.WrapCtc().Concat(item.Wrap()).ToDictionary(), BodyGroup);
         void OnFaceChange(HumanFace item) =>
-            Initialize(item.Wrap(), FaceGroup);
+            Initialize(item.WrapCtc().Concat(item.Wrap()).ToDictionary(), FaceGroup);
         void OnHairChange(HumanHair item, int index) =>
             Initialize(item.Wrap(index), GroupAt($"Hair:{Enum.GetName(typeof(ChaFileDefine.HairKind), index)}", HairGroups, index));
         void OnClothesChange(HumanCloth item, int index) =>
-            Initialize(item.Wrap(index), GroupAt($"Clothes:{Enum.GetName(typeof(ChaFileDefine.ClothesKind), index)}", ClothesGroups, index));
+            Initialize(item.clothess[index].WrapCtc().Concat(item.Wrap(index)).ToDictionary(),
+                GroupAt($"Clothes:{Enum.GetName(typeof(ChaFileDefine.ClothesKind), index)}", ClothesGroups, index));
         void OnAccessoryChange(HumanAccessory item, int index) =>
             Initialize(item.Wrap(index), GroupAt($"Accessories{index}", AccessoryGroups, index));
         void Apply(CoordMods mods)
@@ -131,43 +132,32 @@ namespace SardineHead
     }
     partial class ModApplicator
     {
+        static void OnPreCharacterDeserialize(HumanData data, CharaLimit limits, ZipArchive archive, ZipArchive storage) =>
+            new ModApplicator(data, CharaMods.Load(archive).AsCoord(data));
         static void OnPreActorHumanize(SaveData.Actor actor, HumanData data, ZipArchive archive) =>
             new ModApplicator(data, CharaMods.Load(archive).AsCoord(actor.charFile));
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
             new ModApplicator(human.data, CharaMods.Load(archive).AsCoord(type));
         static void OnPreCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
             new ModApplicator(human.data, CharaMods.Load(storage).Merge(human)(limits, CoordMods.Load(archive)).AsCoord(human));
+        static void OnPostCharacterDeserialize(Human human, CharaLimit limits, ZipArchive archive, ZipArchive storage) =>
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
         static void OnPostActorHumanize(SaveData.Actor actor, Human human, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
         static void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
         static void OnPostCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human.data));
+            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
         internal static void Initialize()
         {
+            Event.OnPreCharacterDeserialize += OnPreCharacterDeserialize;
             Event.OnPreActorHumanize += OnPreActorHumanize;
             Event.OnPreCoordinateReload += OnPreCoordinateReload;
             Event.OnPreCoordinateDeserialize += OnPreCoordinateDeserialize;
+            Event.OnPostCharacterDeserialize += OnPostCharacterDeserialize;
             Event.OnPostActorHumanize += OnPostActorHumanize;
             Event.OnPostCoordinateReload += OnPostCoordinateReload;
             Event.OnPostCoordinateDeserialize += OnPostCoordinateDeserialize;
-            Util<HumanCustom>.Hook(() =>
-            {
-                Event.OnPreActorHumanize -= OnPreActorHumanize;
-                Event.OnPreCoordinateReload -= OnPreCoordinateReload;
-                Event.OnPreCoordinateDeserialize -= OnPreCoordinateDeserialize;
-                Event.OnPostActorHumanize -= OnPostActorHumanize;
-                Event.OnPostCoordinateReload -= OnPostCoordinateReload;
-                Event.OnPostCoordinateDeserialize -= OnPostCoordinateDeserialize;
-            }, () =>
-            {
-                Event.OnPreActorHumanize += OnPreActorHumanize;
-                Event.OnPreCoordinateReload += OnPreCoordinateReload;
-                Event.OnPreCoordinateDeserialize += OnPreCoordinateDeserialize;
-                Event.OnPostActorHumanize += OnPostActorHumanize;
-                Event.OnPostCoordinateReload += OnPostCoordinateReload;
-                Event.OnPostCoordinateDeserialize += OnPostCoordinateDeserialize;
-            });
         }
     }
     [BepInProcess(Process)]

@@ -95,11 +95,11 @@ namespace SardineHead
                 (true, false) => BoolValue.Disabled
             };
         internal override void Apply(Modifications mod) =>
-            (Target.isOn, Wrapper.Renderer.enabled) = mod.Rendering switch
+            Target.isOn = mod.Rendering switch
             {
-                BoolValue.Enabled => (true, true.With(Value.SetIsOnWithoutNotify)),
-                BoolValue.Disabled => (true, false.With(Value.SetIsOnWithoutNotify)),
-                _ => (false, true.With(Value.SetIsOnWithoutNotify))
+                BoolValue.Enabled => true.With(Value.SetIsOnWithoutNotify),
+                BoolValue.Disabled => true.With(Value.SetIsOnWithoutNotify),
+                _ => false.With(Value.SetIsOnWithoutNotify)
             };
         internal override void Update() =>
             Label.With(base.Update).SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
@@ -123,7 +123,8 @@ namespace SardineHead
         internal override void Store(Modifications mod) =>
             Target.isOn.Maybe(() => mod.IntValues[Edit.name] = int.TryParse(Input.text, out var value) ? value : Wrapper.GetInt(Edit.name));
         internal override void Apply(Modifications mod) =>
-            (Target.isOn = mod.IntValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetInt.Apply(Edit.name).Apply(value));
+            (Target.isOn = mod.IntValues.TryGetValue(Edit.name, out var value))
+                .Maybe(F.Apply(Input.SetText, value.ToString(), false));
         protected override void UpdateGet() =>
             Input.SetTextWithoutNotify(Wrapper.GetInt(Edit.name).ToString());
         protected override void UpdateSet() =>
@@ -144,7 +145,8 @@ namespace SardineHead
         internal override void Store(Modifications mod) =>
             Target.isOn.Maybe(() => mod.FloatValues[Edit.name] = float.TryParse(Input.text, out var value) ? value : Wrapper.GetFloat(Edit.name));
         internal override void Apply(Modifications mod) =>
-            (Target.isOn = mod.FloatValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetFloat.Apply(Edit.name).Apply(value));
+            (Target.isOn = mod.FloatValues.TryGetValue(Edit.name, out var value))
+                .Maybe(F.Apply(Input.SetText, value.ToString(), false));
         protected override void UpdateGet() =>
             Input.SetTextWithoutNotify(Wrapper.GetInt(Edit.name).ToString());
         protected override void UpdateSet() =>
@@ -166,7 +168,8 @@ namespace SardineHead
         internal override void Store(Modifications mod) =>
             Target.isOn.Maybe(() => mod.RangeValues[Edit.name] = Range.value);
         internal override void Apply(Modifications mod) =>
-            (Target.isOn = mod.RangeValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetRange.Apply(Edit.name).Apply(value));
+            (Target.isOn = mod.RangeValues.TryGetValue(Edit.name, out var value))
+                .Maybe(F.Apply(Range.Set, value, false));
         internal override void Update() =>
             Value.With(base.Update).SetText(Range.value.ToString());
         protected override void UpdateGet() =>
@@ -186,7 +189,7 @@ namespace SardineHead
         internal override void Store(Modifications mod) =>
             Target.isOn.Maybe(() => mod.ColorValues[Edit.name] = Input.GetColor());
         internal override void Apply(Modifications mod) =>
-            (Target.isOn = mod.ColorValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetColor.Apply(Edit.name).Apply(value));
+            (Target.isOn = mod.ColorValues.TryGetValue(Edit.name, out var value)).Maybe(UpdateGet);
         protected override void UpdateGet() =>
             Input.SetColor(Wrapper.GetColor(Edit.name));
         protected override void UpdateSet() =>
@@ -245,7 +248,7 @@ namespace SardineHead
         internal override void Store(Modifications mod) =>
             Target.isOn.Maybe(() => mod.VectorValues[Edit.name] = Value);
         internal override void Apply(Modifications mod) =>
-            (Target.isOn = mod.VectorValues.TryGetValue(Edit.name, out var value)).Maybe(Wrapper.SetVector.Apply(Edit.name).Apply(Value.With(Apply)));
+            (Target.isOn = mod.VectorValues.TryGetValue(Edit.name, out var value)).Maybe(F.Apply(Apply, (Vector4)value));
         protected override void UpdateGet() =>
             Apply(Wrapper.GetVector(Edit.name));
         protected override void UpdateSet() =>
@@ -288,8 +291,7 @@ namespace SardineHead
            (Target.isOn && Textures.IsExtension(Value.text))
             .Maybe(() => mod.TextureHashes[Edit.name] = Wrapper.GetTexture(Edit.name)?.name ?? "");
         internal override void Apply(Modifications mod) =>
-            (Target.isOn = mod.TextureHashes.TryGetValue(Edit.name, out var value))
-                .Maybe(Wrapper.SetTexture.Apply(Edit.name).Apply(Textures.FromHash(Value.text = value)));
+            (Target.isOn = mod.TextureHashes.TryGetValue(Edit.name, out var value)).Maybe(F.Apply(Value.SetText, value, false));
         internal override void Update() =>
             Export.With(base.Update).interactable = Wrapper.GetTexture(Edit.name) is not null;
         protected override void UpdateGet() =>
