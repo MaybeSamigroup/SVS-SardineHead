@@ -174,8 +174,7 @@ namespace SardineHead
                 .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetVector, id, value));
         internal Action<string, Texture> SetTexture => (name, value) =>
             Ids[ShaderPropertyType.Texture].TryGetValue(name, out var id)
-                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetTexture, id,
-                    value.With(() => Plugin.Instance.Log.LogInfo($"{name}.{value.name}")))); 
+                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetTexture, id, value)); 
         internal Dictionary<string, ShaderPropertyType> Properties { get; init; } = new();
         internal Dictionary<string, Vector2> RangeLimits { get; init; } = new();
         MaterialWrapper(Material value) =>
@@ -319,32 +318,22 @@ namespace SardineHead
         };
         void OnFaceReady(HumanFace item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Face) + F.Apply(Plugin.Instance.Log.LogInfo, "FaceReady"));
+                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Face));
         void OnBodyReady(HumanBody item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Body) + F.Apply(Plugin.Instance.Log.LogInfo, "BodyReady"));
+                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Body));
         void OnClothesReady(HumanCloth item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new()))
-                    + F.Apply(Plugin.Instance.Log.LogInfo, $"ClothesReady{index}"));
+                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new())));
         void OnFaceChange(HumanFace item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.Wrap().Apply, Mods.Face) + F.Apply(Plugin.Instance.Log.LogInfo, "FaceChange"));
+                .Maybe(F.Apply(item.Wrap().Apply, Mods.Face));
         void OnBodyChange(HumanBody item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.Wrap().Apply, Mods.Body) + F.Apply(Plugin.Instance.Log.LogInfo, "BodyChange"));
-        void OnHairChange(HumanHair item, int index) =>
-            (Current.GetValueOrDefault(item.human.data) == this && Mods.Hairs.ContainsKey(index))
-                .Maybe(F.Apply(item.hairs[index].Wrap().Apply, Mods.Hairs.GetValueOrDefault(index, new()))
-                    + F.Apply(Plugin.Instance.Log.LogInfo, $"HairChange{index}"));
+                .Maybe(F.Apply(item.Wrap().Apply, Mods.Body));
         void OnClothesChange(HumanCloth item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this && Mods.Clothes.ContainsKey(index))
-                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new()))
-                    + F.Apply(Plugin.Instance.Log.LogInfo, $"ClothesChange{index}"));
-        void OnAccessoryChange(HumanAccessory item, int index) =>
-            (Current.GetValueOrDefault(item.human.data) == this && Mods.Accessories.ContainsKey(index))
-                .Maybe(F.Apply(item.accessories[index].Wrap().Apply, Mods.Accessories.GetValueOrDefault(index, new()))
-                    + F.Apply(Plugin.Instance.Log.LogInfo, $"AccessoryChange{index}"));
+                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new())));
     }
     static class Hooks
     {
