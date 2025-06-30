@@ -17,10 +17,10 @@ using CoastalSmell;
 
 namespace SardineHead
 {
-    internal static partial class UI
+    internal static class UI
     {
         internal static GameObject Window(WindowHandle handle) =>
-            UGUI.Window(856, 824, Plugin.Name, handle, Root)
+            UGUI.Window(856, 824, Plugin.Name, handle)
                 .With(UGUI.Cmp(UGUI.ToggleGroup(allowSwitchOff: false)))
                 .With(UGUI.Cmp(UGUI.LayoutGroup<HorizontalLayoutGroup>()));
         internal static Func<GameObject, Tuple<Transform, Transform>> Panels =
@@ -31,22 +31,89 @@ namespace SardineHead
             .With(UGUI.Cmp(UGUI.Fitter()))
             .With(UGUI.Cmp(UGUI.LayoutGroup<VerticalLayoutGroup>(padding: new(6, 6, 6, 6))));
         internal static Action<string, GameObject> Section =
-            (name, parent) => UGUI.Section(300, 20, name, new(0.3f, 0.3f, 0.3f, 0.8f), parent);
+            (name, parent) => UGUI.Section(300, 24, name, new(0.3f, 0.3f, 0.3f, 0.8f), parent);
         internal static Func<string, GameObject, GameObject> Toggle =
-            (name, parent) => UGUI.Toggle(300, 20, name, parent);
+            (name, parent) => UGUI.Toggle(300, 24, name, parent);
         internal static Action<int, string, GameObject> Label =
-            (size, name, parent) => UGUI.Label(size, 18, name, parent);
+            (size, name, parent) => UGUI.Label(size, 24, name, parent);
         internal static Action<TMP_InputField.ContentType, GameObject> Input =
-            (type, parent) => UGUI.Input(120, 18, "Input", parent)
+            (type, parent) => UGUI.Input(120, 24, "Input", parent)
                 .With(UGUI.Cmp(UGUI.InputField(contentType: type)));
         internal static Action<string, GameObject> Check =
-            (name, parent) => UGUI.Check(18, 18, name, parent);
+            (name, parent) => UGUI.Check(24, 24, name, parent);
         internal static Action<GameObject> Color =
-            parent => UGUI.Color(100, 18, "Color", parent);
+            parent => UGUI.Color(100, 24, "Color", parent);
         internal static Action<GameObject> Range =
-            parent => UGUI.Slider(120, 18, "Range", parent);
+            parent => UGUI.Slider(120, 24, "Range", parent);
         internal static Action<string, GameObject> Button =
-            (name, parent) => UGUI.Button(80, 18, name, parent);
+            (name, parent) => UGUI.Button(80, 24, name, parent);
+        internal static Action<string, GameObject> Choice =
+            (name, parent) => UGUI.Choice(220, 24, name, parent);
+        internal static readonly string[] ShaderNames = {
+            "Hidden/InternalErrorShader",
+            "Custom/monoTone",
+            "ItohikiShader_URP",
+            "Legacy Shaders/VertexLit",
+            "Legacy Shaders/Particles/Alpha Blended",
+            "Legacy Shaders/Particles/Alpha Blended Premultiply",
+            "ProBuilder/UnlitVertexColor",
+            "ProBuilder/Standard Vertex Color",
+            "LIF/lif_create_main_cloth",
+            "LIF/lif_create_main_skin_body",
+            "LIF/lif_create_main_skin_head",
+            "LIF/lif_main_acs",
+            "LIF/lif_main_acs_alpha",
+            "LIF/lif_main_acs_low",
+            "LIF/lif_main_cloth",
+            "LIF/lif_main_cloth_low",
+            "LIF/lif_main_cloth_alpha",
+            "LIF/lif_main_cloth_alpha_low",
+            "LIF/lif_main_cloth_socks",
+            "LIF/lif_main_cloth_socks_alpha",
+            "LIF/lif_main_eye",
+            "LIF/lif_main_eye_low",
+            "LIF/lif_main_eyebrow",
+            "LIF/lif_main_eyelash_up",
+            "LIF/lif_main_eyelid",
+            "LIF/lif_main_hair",
+            "LIF/lif_main_hair_low",
+            "LIF/lif_main_hair_outline",
+            "LIF/lif_main_nail",
+            "LIF/lif_main_nail_low",
+            "LIF/lif_main_skin_body",
+            "LIF/lif_main_skin_body_low",
+            "LIF/lif_main_skin_head",
+            "LIF/lif_main_skin_head_low",
+            "LIF/lif_namida",
+            "LIF/lif_silhouette",
+            "LIF/lif_sub_mnpb_urp",
+            "LIF/lif_unlit2d",
+            "LIF/MoveAxis",
+            "LIF/MoveAxis_Alpha",
+            "LIF/sub_texture_animation",
+            "lif_shadow_map",
+            "Lux URP/FX/Box Volume",
+            "Lux URP/FX/Lightbeam",
+            "Lux URP/Water",
+            "Obi/DistanceFieldSlice",
+            "Obi/URP/Fluid/FluidShading",
+            "Obi/URP/Particles",
+            "Obi/URP/Simple Particles",
+            "Obi/Fluid/Colors/FluidColorsBlend",
+            "Obi/Fluid/FluidShading",
+            "Obi/Simple Particles",
+            "Universal Render Pipeline/Lit",
+            "Universal Render Pipeline/Nature/SpeedTree8",
+            "Universal Render Pipeline/Particles/Unlit",
+            "Unlit/Color",
+            "Unlit/Texture",
+            "Unlit/Transparent",
+            "Standard (Vertex Colors)",
+            "Standard (Specular setup)",
+            "Standard",
+        };
+        internal static ChoiceList ShaderChoices;
+        internal static void PrepareChoicesList() => ShaderChoices = new(300, 24, "Shaders", ShaderNames);
     }
     internal abstract class CommonEdit
     {
@@ -56,7 +123,7 @@ namespace SardineHead
                 .With(UGUI.Cmp(UGUI.Layout(width: 500)))
                 .With(UGUI.Cmp(UGUI.Fitter()))
                 .With(UI.Check.Apply("Target"))
-                .With(UI.Label.Apply(200).Apply("Label"));
+                .With(UI.Label.Apply(216).Apply("Label"));
         protected MaterialWrapper Wrapper;
         protected GameObject Edit;
         protected Toggle Target;
@@ -72,11 +139,36 @@ namespace SardineHead
         protected abstract void UpdateGet();
         protected abstract void UpdateSet();
     }
+    internal class ShaderEdit : CommonEdit
+    {
+        internal static void PrepareArchetype(GameObject parent) =>
+            Archetype = PrepareArchetype("ChoiceEdit", parent.transform)
+                .With(UI.Choice.Apply("Choice"));
+        static GameObject Archetype { get; set; }
+        Toggle State;
+        TextMeshProUGUI Value;
+        internal ShaderEdit(string name, Transform parent, MaterialWrapper wrapper, EditView view) :
+            base(name, parent, wrapper, Archetype) => Edit
+                .With(UGUI.ModifyAt("Choice", "Choice.State", "Choice.Label")(UGUI.Cmp<TextMeshProUGUI>(ui => Value = ui)))
+                .With(UGUI.ModifyAt("Choice")(UGUI.Cmp<Toggle>(ui => State = ui) + UI.ShaderChoices.Assign))
+                .With(() => State.OnValueChangedAsObservable().Subscribe(OnValueChanged(view.Populate)));
+        Action<bool> OnValueChanged(Action<MaterialWrapper> action) =>
+            value => (!value && UI.ShaderNames.Contains(Value.text))
+                .Maybe(F.Apply(Wrapper.SetShader, Value.text) + action.Apply(Wrapper));
+        internal override void Store(Modifications mod) =>
+            Target.isOn.Maybe(() => mod.Shader = Wrapper.GetShader());
+        internal override void Apply(Modifications mod) =>
+            Target.isOn = (mod.Shader != default).With(F.Apply(Wrapper.SetShader, mod.Shader));
+        protected override void UpdateGet() =>
+            Value.SetText(Wrapper.GetShader());
+        protected override void UpdateSet() =>
+            Value.SetText(Wrapper.GetShader());
+    }
     internal class RenderingEdit : CommonEdit
     {
         internal static void PrepareArchetype(GameObject parent) =>
             Archetype = PrepareArchetype("BoolEdit", parent.transform)
-                .With(UI.Check.Apply("Rendering")).With(UI.Label.Apply(220).Apply("State"));
+                .With(UI.Check.Apply("Rendering")).With(UI.Label.Apply(150).Apply("State"));
         static GameObject Archetype { get; set; }
         Toggle Value;
         TextMeshProUGUI Label;
@@ -274,17 +366,21 @@ namespace SardineHead
                 .With(UGUI.ModifyAt("TextureValues", "TextureName")(UGUI.Cmp<TextMeshProUGUI>(ui => Value = ui)))
                 .With(() => Import.OnClickAsObservable().Subscribe(OnImport))
                 .With(() => Export.OnClickAsObservable().Subscribe(OnExport));
-        Action<Unit> OnExport => _ => Dialog<ExportDialog>("export", ExportTexture);
-        Action<Unit> OnImport => _ => Dialog<ImportDialog>("import", ImportTexture);
-        Action<string> ExportTexture => path => Textures.ToFile(Wrapper.GetTexture(Edit.name), path);
-        Action<string> ImportTexture => path => Wrapper.SetTexture(Edit.name, Textures.FromFile(path));
-        Action Dialog<T>(string path, Action<string> action) where T : System.Windows.Forms.FileDialog, new() =>
+        Action<Unit> OnExport =>
+            _ => Dialog<ExportDialog>("export", ExportTexture);
+        Action<Unit> OnImport =>
+            _ => Dialog<ImportDialog>("import", ImportTexture);
+        Action<string> ExportTexture =>
+            path => Textures.ToFile(Wrapper.GetTexture(Edit.name), path);
+        Action<string> ImportTexture =>
+            path => Wrapper.SetTexture(Edit.name, Textures.FromFile(path));
+        void Dialog<T>(string path, Action<string> action) where T : System.Windows.Forms.FileDialog, new() =>
             TryGetFilePath<T>(action).ApplyDisposable(new T()
             {
                 InitialDirectory = Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Guid, path),
                 Filter = "Texture Sources|*.png",
                 FileName = $"{Wrapper.GetTexture(Edit.name)?.name ?? "na"}.png",
-            });
+            })();
         Action<T> TryGetFilePath<T>(Action<string> action) where T : System.Windows.Forms.FileDialog =>
             dialog => (dialog.ShowDialog() is System.Windows.Forms.DialogResult.OK).Maybe(action.Apply(dialog.FileName));
         internal override void Store(Modifications mod) =>
@@ -301,31 +397,51 @@ namespace SardineHead
     }
     internal class EditView
     {
-        MaterialWrapper Wrapper;
         GameObject Toggle;
         GameObject Panel;
+        Action<bool> ToggleActive;
         List<CommonEdit> Edits;
-        EditView(GameObject toggle, GameObject panel) =>
-            toggle.GetComponentInChildren<Toggle>().onValueChanged.AddListener((Action<bool>)panel.SetActive);
-        EditView(MaterialWrapper wrapper, GameObject toggle, GameObject panel) : this(toggle, panel) =>
-            (Wrapper, Toggle, Panel) = (wrapper, toggle, panel);
-        internal EditView(string name, MaterialWrapper wrapper, GameObject toggle, Transform parent) :
-            this(wrapper, toggle, new GameObject(name)
+        EditView(WindowHandle handle, GameObject panel) =>
+            (Panel, ToggleActive) = (panel, value => (panel.active = value)
+                .Maybe(F.Apply(handle.Title.SetText, $"{Plugin.Name}:{panel.name}", false)));
+        EditView(WindowHandle handle, GameObject toggle, GameObject panel) : this(handle, panel) =>
+            (Toggle = toggle).GetComponentInChildren<Toggle>().OnValueChangedAsObservable().Subscribe(ToggleActive);
+        internal EditView(WindowHandle handle, string name, MaterialWrapper wrapper, GameObject toggle, Transform parent) :
+            this(handle, toggle, new GameObject(name)
                 .With(UGUI.Go(parent: parent, active: false))
                 .With(UGUI.Cmp(UGUI.LayoutGroup<VerticalLayoutGroup>(spacing: 5)))
                 .With(UGUI.Cmp(UGUI.Layout(width: 500)))) =>
-            Edits = RendererEdits().Concat(Wrapper.Properties.Select(entry => (CommonEdit)(entry.Value switch
+            Edits = RendererEdits(wrapper).Concat(wrapper.Properties.Select(entry => (CommonEdit)(entry.Value switch
             {
-                ShaderPropertyType.Int => new IntEdit(entry.Key, Panel.transform, Wrapper),
-                ShaderPropertyType.Float => new FloatEdit(entry.Key, Panel.transform, Wrapper),
-                ShaderPropertyType.Range => new RangeEdit(entry.Key, Panel.transform, Wrapper),
-                ShaderPropertyType.Color => new ColorEdit(entry.Key, Panel.transform, Wrapper),
-                ShaderPropertyType.Vector => new VectorEdit(entry.Key, Panel.transform, Wrapper),
-                ShaderPropertyType.Texture => new TextureEdit(entry.Key, Panel.transform, Wrapper),
+                ShaderPropertyType.Int => new IntEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Float => new FloatEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Range => new RangeEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Color => new ColorEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Vector => new VectorEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Texture => new TextureEdit(entry.Key, Panel.transform, wrapper),
                 _ => throw new NotImplementedException()
             }))).ToList();
-        internal IEnumerable<CommonEdit> RendererEdits() =>
-            Wrapper.Renderer == null ? [] : [new RenderingEdit("Rendering", Panel.transform, Wrapper)];
+        IEnumerable<CommonEdit> RendererEdits(MaterialWrapper wrapper) =>
+            wrapper.Renderer == null ? [
+                new ShaderEdit("Shader", Panel.transform, wrapper, this)
+            ] : [
+                new ShaderEdit("Shader", Panel.transform, wrapper, this),
+                new RenderingEdit("Rendering", Panel.transform, wrapper)
+            ];
+        internal void Populate(MaterialWrapper wrapper) =>
+            Edits = RendererEdits(wrapper.With(UGUI.DestroyChildren.Apply(Panel)))
+                .Concat(wrapper.Properties.Select(ToEdit(wrapper))).ToList();
+        Func<KeyValuePair<string, ShaderPropertyType>, CommonEdit> ToEdit(MaterialWrapper wrapper) =>
+            entry => entry.Value switch
+            {
+                ShaderPropertyType.Int => new IntEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Float => new FloatEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Range => new RangeEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Color => new ColorEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Vector => new VectorEdit(entry.Key, Panel.transform, wrapper),
+                ShaderPropertyType.Texture => new TextureEdit(entry.Key, Panel.transform, wrapper),
+                _ => throw new NotImplementedException()
+            };
         void Store(Modifications mod) =>
             Edits.Do(edit => edit.Store(mod));
         void Apply(Modifications mod) =>
@@ -353,9 +469,9 @@ namespace SardineHead
                 .With(UGUI.Cmp(UGUI.Layout(width: 300)))
                 .With(UGUI.Cmp(UGUI.Fitter()))
                 .With(UI.Section.Apply(name));
-        internal void Initialize(Dictionary<string, MaterialWrapper> wrappers, Transform editParent) =>
+        internal void Initialize(Dictionary<string, MaterialWrapper> wrappers, WindowHandle handle, Transform editParent) =>
             Toggles.active = (EditViews = wrappers.With(Dispose)
-                .Select(entry => new EditView(entry.Key, entry.Value, UI.Toggle(entry.Key, Toggles)
+                .Select(entry => new EditView(handle, entry.Key, entry.Value, UI.Toggle(entry.Key, Toggles)
                     .With(UGUI.Cmp<Toggle, ToggleGroup>((ui, group) => ui.group = group)), editParent)).ToList()).Count > 0;
         void Store(Dictionary<string, Modifications> mods) =>
             EditViews.Do(edits => edits.Store(mods));

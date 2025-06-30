@@ -18,10 +18,6 @@ using CoastalSmell;
 
 namespace SardineHead
 {
-    internal static partial class UI
-    {
-        static Transform Root => HumanCustom.Instance.transform.Find("UI").Find("Root");
-    }
     internal class EditWindow
     {
         Transform ListPanel;
@@ -33,24 +29,24 @@ namespace SardineHead
         Dictionary<int, EditGroup> AccessoryGroups = new();
         EditWindow(Tuple<Transform, Transform> panels) =>
             (ListPanel, EditPanel) = panels;
-        EditWindow(GameObject window) : this(UI.Panels(window)) =>
-            window
-                .With(IntEdit.PrepareArchetype)
-                .With(FloatEdit.PrepareArchetype)
-                .With(RangeEdit.PrepareArchetype)
-                .With(ColorEdit.PrepareArchetype)
-                .With(VectorEdit.PrepareArchetype)
-                .With(TextureEdit.PrepareArchetype)
-                .With(RenderingEdit.PrepareArchetype)
-                .With(Util.OnCustomHumanReady.Apply(() =>
-                    window.GetComponentInParent<ObservableUpdateTrigger>()
-                        .UpdateAsObservable().Subscribe(F.Ignoring<Unit>(Update))));
+        EditWindow(GameObject window) : this(UI.Panels(window)) => window
+            .With(UI.PrepareChoicesList)
+            .With(ShaderEdit.PrepareArchetype)
+            .With(RenderingEdit.PrepareArchetype)
+            .With(IntEdit.PrepareArchetype)
+            .With(FloatEdit.PrepareArchetype)
+            .With(RangeEdit.PrepareArchetype)
+            .With(ColorEdit.PrepareArchetype)
+            .With(VectorEdit.PrepareArchetype)
+            .With(TextureEdit.PrepareArchetype)
+            .GetComponentInParent<ObservableUpdateTrigger>()
+                .UpdateAsObservable().Subscribe(F.Ignoring<Unit>(Update));
         EditWindow() : this(UI.Window(Handle)) =>
             (FaceGroup, BodyGroup) = (new EditGroup("Face", ListPanel), new EditGroup("Body", ListPanel));
         EditGroup GroupAt(string name, Dictionary<int, EditGroup> groups, int index) =>
             groups.TryGetValue(index, out var group) ? group : groups[index] = new EditGroup(name, ListPanel);
         void Initialize(Dictionary<string, MaterialWrapper> wrappers, EditGroup group) =>
-            group.Initialize(wrappers, EditPanel);
+            group.Initialize(wrappers, Handle, EditPanel);
         void OnBodyChange(HumanBody item) =>
             Initialize(item.WrapCtc().Concat(item.Wrap()).ToDictionary(), BodyGroup);
         void OnFaceChange(HumanFace item) =>
@@ -99,7 +95,6 @@ namespace SardineHead
             Handle = new WindowHandle(Plugin.Instance, Plugin.Name, new(30, -80), new KeyboardShortcut(KeyCode.S, KeyCode.LeftControl));
             Util<HumanCustom>.Hook(() =>
             {
-                Plugin.Instance.Log.LogInfo("CustomInstantiate");
                 Instance = new EditWindow();
                 Event.OnCharacterSerialize += Instance.OnCharacterSerialize;
                 Event.OnCoordinateSerialize += Instance.OnCoordinateSerialize;
@@ -114,7 +109,6 @@ namespace SardineHead
                 Hooks.OnAccessoryChange += Instance.OnAccessoryChange;
             }, () =>
             {
-                Plugin.Instance.Log.LogInfo("CustomDestroyed");
                 Event.OnCharacterSerialize -= Instance.OnCharacterSerialize;
                 Event.OnCoordinateSerialize -= Instance.OnCoordinateSerialize;
                 Event.OnPreCoordinateReload -= Instance.OnPreCoordinateReload;
@@ -166,14 +160,10 @@ namespace SardineHead
     public partial class Plugin : BasePlugin
     {
         public const string Process = "SamabakeScramble";
-        public const string Guid = $"{Process}.{Name}";
-        private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
                 .With(() => Instance = this)
                 .With(ModApplicator.Initialize)
                 .With(EditWindow.Initialize);
-        public override bool Unload() =>
-            true.With(Patch.UnpatchSelf) && base.Unload();
     }
 }

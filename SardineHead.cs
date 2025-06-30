@@ -14,7 +14,6 @@ using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Mods = System.Collections.Generic.Dictionary<string, SardineHead.Modifications>;
 using CoastalSmell;
 using Fishbone;
-using UniRx.Triggers;
 
 namespace SardineHead
 {
@@ -45,6 +44,7 @@ namespace SardineHead
     }
     public class Modifications
     {
+        public string Shader { get; set; } = null;
         public BoolValue Rendering { get; set; } = BoolValue.Unmanaged;
         public Dictionary<string, int> IntValues { get; init; } = new();
         public Dictionary<string, float> FloatValues { get; init; } = new();
@@ -107,16 +107,17 @@ namespace SardineHead
         internal static void Apply(this Dictionary<string, MaterialWrapper> wrappers, Mods mods) =>
             wrappers.Do(entry => entry.Value.Apply(mods.TryGetValue(entry.Key, out var value) ? value : new()));
         internal static Action Apply(this Human item, CoordMods mods) =>
-            F.Apply(Apply, item.body, mods) +
-            F.Apply(Apply, item.face, mods) +
             F.Apply(Apply, item.hair, mods) +
             F.Apply(Apply, item.cloth, mods) +
-            F.Apply(Apply, item.acs, mods) +
-            (() => Plugin.Instance.Log.LogInfo("Delayed application"));
-        static void Apply(this HumanBody item, CoordMods mods) =>
-            item.Wrap()?.Apply(mods.Body);
+            F.Apply(Apply, item.acs, mods);
         static void Apply(this HumanFace item, CoordMods mods) =>
-            item.Wrap()?.Apply(mods.Face);
+            (F.Apply(item.Wrap().Apply, mods.Face) +
+                F.Apply(item.InitBaseCustomTextureFace, item.human.transform).Ignoring() +
+                F.Apply(item.WrapCtc().Apply, mods.Face))();
+        static void Apply(this HumanBody item, CoordMods mods) =>
+            (F.Apply(item.Wrap().Apply, mods.Body) +
+                F.Apply(item.InitBaseCustomTextureBody, item.human.transform).Ignoring() +
+                F.Apply(item.WrapCtc().Apply, mods.Body))();
         static void Apply(this HumanHair item, CoordMods mods) =>
            item.hairs.ForEachIndex(mods.Apply);
         static void Apply(this HumanCloth item, CoordMods mods) =>
@@ -137,16 +138,13 @@ namespace SardineHead
     }
     internal class MaterialWrapper
     {
+        static Dictionary<ShaderPropertyType, Dictionary<string, int>> EmptyIds =>
+            Enum.GetValues<ShaderPropertyType>().ToDictionary(value => value, value => new Dictionary<string, int>());
         internal Renderer Renderer;
-        internal Material Material;
-        internal Shader Shader;
-        Action<int, int> CmpSetInt;
-        Action<int, float> CmpSetFloat;
-        Action<int, Color> CmpSetClor;
-        Action<int, Vector4> CmpSetVector;
-        Action<int, Texture> CmpSetTexture;
-        Dictionary<ShaderPropertyType, Dictionary<string, int>> Ids =
-             Enum.GetValues<ShaderPropertyType>().ToDictionary(value => value, value => new Dictionary<string, int>());
+        Material Material;
+        Shader Shader;
+        Action<int> UpdateProperty = F.DoNothing.Ignoring<int>();
+        Dictionary<ShaderPropertyType, Dictionary<string, int>> Ids = EmptyIds;
         internal Func<string, int> GetInt => name =>
             Ids[ShaderPropertyType.Int].TryGetValue(name, out var id) ? Material.GetInt(id) : default;
         internal Func<string, float> GetFloat => name =>
@@ -160,68 +158,70 @@ namespace SardineHead
         internal Func<string, Texture> GetTexture => name =>
             Ids[ShaderPropertyType.Texture].TryGetValue(name, out var id) ? Material.GetTexture(id) : default;
         internal Action<string, int> SetInt => (name, value) =>
-            Ids[ShaderPropertyType.Int].TryGetValue(name, out var id).Maybe(CmpSetInt.Apply(id).Apply(value));
+            Ids[ShaderPropertyType.Int].TryGetValue(name, out var id)
+                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetInt, id, value));
         internal Action<string, float> SetFloat => (name, value) =>
-            Ids[ShaderPropertyType.Float].TryGetValue(name, out var id).Maybe(CmpSetFloat.Apply(id).Apply(value));
+            Ids[ShaderPropertyType.Float].TryGetValue(name, out var id)
+                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetFloat, id, value));
         internal Action<string, float> SetRange => (name, value) =>
-            Ids[ShaderPropertyType.Range].TryGetValue(name, out var id).Maybe(CmpSetFloat.Apply(id).Apply(value));
+            Ids[ShaderPropertyType.Range].TryGetValue(name, out var id)
+                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetFloat, id, value));
         internal Action<string, Color> SetColor => (name, value) =>
-            Ids[ShaderPropertyType.Color].TryGetValue(name, out var id).Maybe(CmpSetClor.Apply(id).Apply(value));
+            Ids[ShaderPropertyType.Color].TryGetValue(name, out var id)
+                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetColor, id, value));
         internal Action<string, Vector4> SetVector => (name, value) =>
-            Ids[ShaderPropertyType.Vector].TryGetValue(name, out var id).Maybe(CmpSetVector.Apply(id).Apply(value));
+            Ids[ShaderPropertyType.Vector].TryGetValue(name, out var id)
+                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetVector, id, value));
         internal Action<string, Texture> SetTexture => (name, value) =>
-            Ids[ShaderPropertyType.Texture].TryGetValue(name, out var id).Maybe(CmpSetTexture.Apply(id).Apply(value));
+            Ids[ShaderPropertyType.Texture].TryGetValue(name, out var id)
+                .Maybe(UpdateProperty.Apply(id) + F.Apply(Material.SetTexture, id,
+                    value.With(() => Plugin.Instance.Log.LogInfo($"{name}.{value.name}")))); 
         internal Dictionary<string, ShaderPropertyType> Properties { get; init; } = new();
         internal Dictionary<string, Vector2> RangeLimits { get; init; } = new();
-        void PopulateProperties(Shader shader) =>
-            Enumerable.Range(0, shader.GetPropertyCount()).Do(index => PopulateProperties(shader, index));
+        MaterialWrapper(Material value) =>
+            ((Material, Shader) = (value, value.shader)).With(PopulateProperties);
+        internal MaterialWrapper(Renderer renderer) : this(renderer.material) =>
+            Renderer = renderer;
+        internal MaterialWrapper(CustomTextureControl ctc) : this(ctc._matCreate) =>
+            UpdateProperty = _ => ctc.SetNewCreateTexture();
+        internal MaterialWrapper(CustomTextureCreate ctc, Func<CustomTextureCreate, int, bool> rebuild) : this(ctc._matCreate) =>
+            UpdateProperty = id => rebuild(ctc, id);
+        void PopulateProperties() =>
+            Enumerable.Range(0, Shader.GetPropertyCount()).Do(index => PopulateProperties(Shader, index));
         void PopulateProperties(Shader shader, int index) =>
             PopulateProperties(shader, index, shader.GetPropertyType(index), shader.GetPropertyName(index), shader.GetPropertyNameId(index));
         void PopulateProperties(Shader shader, int index, ShaderPropertyType type, string name, int id) =>
             (type is ShaderPropertyType.Range)
-                .With(() => Properties.TryAdd(name, type))
-                .With(() => Ids[type].TryAdd(name, id))
-                .Maybe(() => RangeLimits.TryAdd(name, shader.GetPropertyRangeLimits(index)));
-        MaterialWrapper(Shader shader) => PopulateProperties(Shader = shader);
-        MaterialWrapper(Material value) : this(value.shader) =>
-            (Material, CmpSetInt, CmpSetFloat, CmpSetClor, CmpSetVector, CmpSetTexture) =
-                (value, value.SetInt, value.SetFloat, value.SetColor, value.SetVector, value.SetTexture);
-        internal MaterialWrapper(Renderer renderer) : this(renderer.material) => Renderer = renderer;
-        internal MaterialWrapper(CustomTextureControl ctc) : this(ctc._matCreate)
-        {
-            CmpSetInt += (_, _) => ctc.SetNewCreateTexture();
-            CmpSetFloat += (_, _) => ctc.SetNewCreateTexture();
-            CmpSetClor += (_, _) => ctc.SetNewCreateTexture();
-            CmpSetVector += (_, _) => ctc.SetNewCreateTexture();
-            CmpSetTexture += (_, _) => ctc.SetNewCreateTexture();
-        }
-        internal MaterialWrapper(CustomTextureCreate ctc, Func<CustomTextureCreate, int, bool> rebuild) : this(ctc._matCreate)
-        {
-            CmpSetInt += (id, _) => rebuild(ctc, id);
-            CmpSetFloat += (id, _) => rebuild(ctc, id);
-            CmpSetClor += (id, _) => rebuild(ctc, id);
-            CmpSetVector += (id, _) => rebuild(ctc, id);
-            CmpSetTexture += (id, _) => rebuild(ctc, id);
-        }
-        internal Action<Modifications> Apply => mods =>
-            mods.With(ApplyInt)
-                .With(ApplyFloat)
-                .With(ApplyRange)
-                .With(ApplyColor)
-                .With(ApplyVector)
-                .With(ApplyTexture)
-                .With(ApplyRenderer);
-        void ApplyInt(Modifications mods) =>
+                .With(F.Apply(Properties.TryAdd, name, type).Ignoring())
+                .With(F.Apply(Ids[type].TryAdd, name, id).Ignoring())
+                .Maybe(F.Apply(PopulateRangeLimits, shader, name, index));
+        void PopulateRangeLimits(Shader shader, string name, int index) =>
+            RangeLimits.TryAdd(name, shader.GetPropertyRangeLimits(index));
+        internal string GetShader() =>
+            Shader.name;
+        internal void SetShader(string name) =>
+            (name != null && Shader.name != name).Maybe(F.Apply(SetShader, Shader.Find(name)));
+        void SetShader(Shader shader) =>
+            (shader != null).Maybe(F.Apply(SetShaderInternal, shader));
+        void SetShaderInternal(Shader shader) =>
+            ((Shader, Ids) = (Material.shader = shader, EmptyIds))
+                .With(Properties.Clear).With(RangeLimits.Clear).With(PopulateProperties);
+        internal Action<Modifications> Apply =>
+            ApplyShader + ApplyInt + ApplyFloat + ApplyRange +
+            ApplyColor + ApplyVector + ApplyTexture + ApplyRenderer;
+        Action<Modifications> ApplyShader => mods =>
+            SetShader(mods.Shader);
+        Action <Modifications> ApplyInt => mods =>
             mods.IntValues.ForEach(entry => SetInt(entry.Key, entry.Value));
-        void ApplyFloat(Modifications mods) =>
+        Action<Modifications> ApplyFloat => mods =>
             mods.FloatValues.ForEach(entry => SetFloat(entry.Key, entry.Value));
-        void ApplyRange(Modifications mods) =>
+        Action<Modifications> ApplyRange => mods =>
             mods.RangeValues.ForEach(entry => SetRange(entry.Key, entry.Value));
-        void ApplyColor(Modifications mods) =>
+        Action<Modifications> ApplyColor => mods =>
             mods.ColorValues.ForEach(entry => SetColor(entry.Key, entry.Value));
-        void ApplyVector(Modifications mods) =>
+        Action<Modifications> ApplyVector => mods =>
             mods.VectorValues.ForEach(entry => SetVector(entry.Key, entry.Value));
-        void ApplyTexture(Modifications mods) =>
+        Action<Modifications> ApplyTexture => mods =>
             mods.TextureHashes.ForEach(entry => SetTexture(entry.Key, Textures.FromHash(entry.Value)));
         Action<Modifications> ApplyRenderer => mods =>
             (Renderer != null).Maybe(() => Renderer.enabled = mods.Rendering switch
@@ -240,16 +240,16 @@ namespace SardineHead
                 .Select(idx => tf.GetChild(idx).gameObject).SelectMany(RenderersOfGo);
         static Func<IEnumerable<Renderer>, Dictionary<string, MaterialWrapper>> WrapRenderers =
             renderers => (renderers ?? []).Where(renderer => renderer != null && renderer.material != null)
-                .GroupBy(renderer => renderer.name ?? renderer.gameObject.name).SelectMany(IdentifyGo.Apply(1))
+                .GroupBy(renderer => renderer.name ?? renderer.gameObject.name)
+                .SelectMany(groups => Identify(groups, 1))
                 .ToDictionary(entry => entry.Item1, entry => new MaterialWrapper(entry.Item2));
-        static Func<int, IGrouping<string, Renderer>, IEnumerable<Tuple<string, Renderer>>> IdentifyGo =
-            (depth, groups) => groups.Count() == 1
+        static IEnumerable<Tuple<string, Renderer>> Identify(IGrouping<string, Renderer> groups, int depth) =>
+            groups.Count() == 1
                 ? groups.Select<Renderer, Tuple<string, Renderer>>(value => new(groups.Key, value))
-                : groups.GroupBy(Identify.Apply(depth).Apply(groups.Key)).SelectMany(IdentifyGo.Apply(depth + 1));
-        static Func<int, string, Renderer, string> Identify =
-            (depth, path, renderer) => $"IdentifyTf(depth, renderer.transform)/{path}";
-        static Func<int, Transform, string> IdentifyTf =
-            (depth, tf) => depth == 0 ? tf.name : IdentifyTf(depth - 1, tf.parent);
+                : groups.GroupBy(renderer => $"{Identify(renderer.gameObject.transform, depth)}/{groups.Key}")
+                    .SelectMany(groups => Identify(groups, depth + 1));
+        static string Identify(this Transform tf, int depth) =>
+            depth == 0 ? tf.name : tf.parent.Identify(depth - 1);
         internal static Dictionary<string, MaterialWrapper> WrapCtc(this HumanFace face) =>
             new (){ ["/ct_face"] = new MaterialWrapper(face.customTexCtrlFace) };
         internal static Dictionary<string, MaterialWrapper> WrapCtc(this HumanBody body) =>
@@ -298,82 +298,74 @@ namespace SardineHead
         ModApplicator(HumanData data, CoordMods mods)
         {
             Mods = mods;
+            Hooks.OnFaceReady += OnFaceChange;
+            Hooks.OnBodyReady += OnBodyChange;
+            Hooks.OnClothesReady += OnClothesChange;
             Hooks.OnFaceReady += OnFaceReady;
             Hooks.OnBodyReady += OnBodyReady;
             Hooks.OnClothesReady += OnClothesReady;
-            Hooks.OnFaceChange += OnFaceChange;
-            Hooks.OnBodyChange += OnBodyChange;
-            Hooks.OnHairChange += OnHairChange;
-            Hooks.OnClothesChange += OnClothesChange;
-            Hooks.OnAccessoryChange += OnAccessoryChange;
             Current.TryAdd(data, this);
         }
         Action<Human> Cleanup => human =>
         {
+            Hooks.OnFaceReady -= OnFaceChange;
+            Hooks.OnBodyReady -= OnBodyChange;
+            Hooks.OnClothesReady -= OnClothesChange;
             Hooks.OnFaceReady -= OnFaceReady;
             Hooks.OnBodyReady -= OnBodyReady;
-            Hooks.OnClothesReady -= OnClothesReady;
-            Hooks.OnFaceChange -= OnFaceChange;
-            Hooks.OnBodyChange -= OnBodyChange;
-            Hooks.OnHairChange -= OnHairChange;
-            Hooks.OnClothesChange -= OnClothesChange;
-            Hooks.OnAccessoryChange -= OnAccessoryChange;
+            Hooks.OnClothesReady += OnClothesReady;
             Current.Remove(human.data);
             Scheduler.MainThread.Schedule(Il2CppSystem.TimeSpan.FromSeconds(0.05), human.Apply(Mods));
         };
         void OnFaceReady(HumanFace item) =>
-             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Face));
+            (Current.GetValueOrDefault(item.human.data) == this)
+                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Face) + F.Apply(Plugin.Instance.Log.LogInfo, "FaceReady"));
         void OnBodyReady(HumanBody item) =>
-             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Body));
+            (Current.GetValueOrDefault(item.human.data) == this)
+                .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Body) + F.Apply(Plugin.Instance.Log.LogInfo, "BodyReady"));
         void OnClothesReady(HumanCloth item, int index) =>
-             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new())));
+            (Current.GetValueOrDefault(item.human.data) == this)
+                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new()))
+                    + F.Apply(Plugin.Instance.Log.LogInfo, $"ClothesReady{index}"));
         void OnFaceChange(HumanFace item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.Wrap().Apply, Mods.Face));
+                .Maybe(F.Apply(item.Wrap().Apply, Mods.Face) + F.Apply(Plugin.Instance.Log.LogInfo, "FaceChange"));
         void OnBodyChange(HumanBody item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
-                .Maybe(F.Apply(item.Wrap().Apply, Mods.Body));
+                .Maybe(F.Apply(item.Wrap().Apply, Mods.Body) + F.Apply(Plugin.Instance.Log.LogInfo, "BodyChange"));
         void OnHairChange(HumanHair item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this && Mods.Hairs.ContainsKey(index))
-                .Maybe(F.Apply(item.hairs[index].Wrap().Apply, Mods.Hairs.GetValueOrDefault(index, new())));
+                .Maybe(F.Apply(item.hairs[index].Wrap().Apply, Mods.Hairs.GetValueOrDefault(index, new()))
+                    + F.Apply(Plugin.Instance.Log.LogInfo, $"HairChange{index}"));
         void OnClothesChange(HumanCloth item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this && Mods.Clothes.ContainsKey(index))
-                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new())));
+                .Maybe(F.Apply(item.clothess[index].WrapCtc().Apply, Mods.Clothes.GetValueOrDefault(index, new()))
+                    + F.Apply(Plugin.Instance.Log.LogInfo, $"ClothesChange{index}"));
         void OnAccessoryChange(HumanAccessory item, int index) =>
             (Current.GetValueOrDefault(item.human.data) == this && Mods.Accessories.ContainsKey(index))
-                .Maybe(F.Apply(item.accessories[index].Wrap().Apply, Mods.Accessories.GetValueOrDefault(index, new())));
+                .Maybe(F.Apply(item.accessories[index].Wrap().Apply, Mods.Accessories.GetValueOrDefault(index, new()))
+                    + F.Apply(Plugin.Instance.Log.LogInfo, $"AccessoryChange{index}"));
     }
     static class Hooks
     {
-        internal static event Action<HumanFace> OnFaceChange =
-            item => Plugin.Instance.Log.LogDebug($"OnFaceChange:{item.human}");
-        internal static event Action<HumanBody> OnBodyChange =
-            item => Plugin.Instance.Log.LogDebug($"OnBodyChange:{item.human}");
-        internal static event Action<HumanHair, int> OnHairChange =
-            (item, idx) => Plugin.Instance.Log.LogDebug($"OnHairChange:{item.human},{idx}");
-        internal static event Action<HumanCloth, int> OnClothesChange =
-            (item, idx) => Plugin.Instance.Log.LogDebug($"OnClothesChange:{item.human},{idx}");
-        internal static event Action<HumanAccessory, int> OnAccessoryChange =
-            (item, idx) => Plugin.Instance.Log.LogDebug($"OnAccessoryChange:{item.human},{idx}");
-        internal static event Action<HumanFace> OnFaceReady =
-            item => Plugin.Instance.Log.LogDebug($"OnFaceReady:{item.human}");
-        internal static event Action<HumanBody> OnBodyReady =
-            item => Plugin.Instance.Log.LogDebug($"OnBodyReady:{item.human}");
-        internal static event Action<HumanCloth, int> OnClothesReady =
-            (item, idx) => Plugin.Instance.Log.LogDebug($"OnClothesReady:{item.human},{idx}");
+        internal static event Action<HumanFace> OnFaceChange = delegate { };
+        internal static event Action<HumanBody> OnBodyChange = delegate { };
+        internal static event Action<HumanHair, int> OnHairChange = delegate { };
+        internal static event Action<HumanCloth, int> OnClothesChange = delegate { };
+        internal static event Action<HumanAccessory, int> OnAccessoryChange = delegate { };
+        internal static event Action<HumanFace> OnFaceReady = delegate { };
+        internal static event Action<HumanBody> OnBodyReady = delegate { };
+        internal static event Action<HumanCloth, int> OnClothesReady = delegate { };
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanBody), nameof(HumanBody.InitBaseCustomTextureBody))]
+        internal static void InitBaseCustomTextureBodyPostfix(HumanBody __instance) =>
+            OnBodyChange(__instance);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanFace), nameof(HumanFace.ChangeHead), typeof(int), typeof(bool))]
         static void ChangeHeadPostfix(HumanFace __instance) =>
             OnFaceChange(__instance);
-        [HarmonyPostfix]
-        [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanBody), nameof(HumanBody.InitBaseCustomTextureBody))]
-        static void InitBaseCustomTextureBodyPostfix(HumanBody __instance) =>
-            OnBodyChange(__instance);
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanHair), nameof(HumanHair.ChangeHair), typeof(int), typeof(int), typeof(bool))]
@@ -467,8 +459,12 @@ namespace SardineHead
     }
     public partial class Plugin : BasePlugin
     {
-        internal static Plugin Instance;
         public const string Name = "SardineHead";
+        public const string Guid = $"{Process}.{Name}";
         public const string Version = "1.1.8";
+        internal static Plugin Instance;
+        private Harmony Patch;
+        public override bool Unload() =>
+            true.With(Patch.UnpatchSelf) && base.Unload();
     }
 }

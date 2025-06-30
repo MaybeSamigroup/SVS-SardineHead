@@ -6,14 +6,9 @@ using Character;
 using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 using Fishbone;
 using CoastalSmell;
-using UnityEngine;
 
 namespace SardineHead
 {
-    internal static partial class UI
-    {
-        static Transform Root => MainScene.Instance.transform;
-    }
     partial class ModApplicator
     {
         static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
@@ -45,13 +40,9 @@ namespace SardineHead
     public partial class Plugin : BasePlugin
     {
         public const string Process = "DigitalCraft";
-        public const string Guid = $"{Process}.{Name}";
-        private Harmony Patch;
         public override void Load() =>
             Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
                 .With(() => Instance = this)
                 .With(ModApplicator.Initialize);
-        public override bool Unload() =>
-            true.With(Patch.UnpatchSelf) && base.Unload();
     }
 }

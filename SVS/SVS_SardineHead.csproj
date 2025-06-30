@@ -84,7 +84,7 @@
 			<HintPath>$(GamePath)\BepInEx\plugins\ConfigurationManager\BepinEx.KeyboardShortcut.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="Fishbone">
+		<Reference Include="CoastalSmell">
 			<HintPath>$(GamePath)\BepInEx\plugins\SVS_CoastalSmell.dll</HintPath>
 			<Private>False</Private>
 		</Reference>

@@ -42,7 +42,7 @@ namespace SardineHead
     }
     public partial class LegacyCoordMods
     {
-         public static implicit operator CoordMods(LegacyCoordMods mods) => new()
+        public static implicit operator CoordMods(LegacyCoordMods mods) => new()
         {
             Face = new(),
             Body = new(),
@@ -52,7 +52,8 @@ namespace SardineHead
             Accessories = mods.Accessory
         };
     }
-    interface TextureMods {
+    interface TextureMods
+    {
         IEnumerable<string> ToTextures();
     }
     public partial class CharaMods : TextureMods
@@ -80,7 +81,7 @@ namespace SardineHead
             Clothes = Clothes.TryGetValue(index, out var clothes) ? clothes : new(),
             Accessories = Accessories.TryGetValue(index, out var accessories) ? accessories : new(),
         };
-        internal partial Func<CharaMods,CharaMods> Merge(CharaLimit limits) => mods => new()
+        internal partial Func<CharaMods, CharaMods> Merge(CharaLimit limits) => mods => new()
         {
             Face = (limits & CharaLimit.Face) == CharaLimit.None ? Face : mods.Face,
             Body = (limits & CharaLimit.Body) == CharaLimit.None ? Body : mods.Body,
@@ -88,7 +89,8 @@ namespace SardineHead
             Clothes = (limits & CharaLimit.Coorde) == CharaLimit.None ? Clothes : mods.Clothes,
             Accessories = (limits & CharaLimit.Coorde) == CharaLimit.None ? Accessories : mods.Accessories,
         };
-        internal partial Func<CoordLimit, CoordMods, CharaMods> Merge(int index) => (limits, mods) => new () {
+        internal partial Func<CoordLimit, CoordMods, CharaMods> Merge(int index) => (limits, mods) => new()
+        {
             Face = (limits & CoordLimit.FaceMakeup) == CoordLimit.None ? Face : mods.Face,
             Body = (limits & CoordLimit.BodyMakeup) == CoordLimit.None ? Body : mods.Body,
             Hairs = (limits & CoordLimit.Hair) == CoordLimit.None ? Hairs :
@@ -124,7 +126,8 @@ namespace SardineHead
                 .Concat(Accessories.Values
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.TextureHashes.Values));
-        internal partial Func<CoordMods, CoordMods> Merge(CoordLimit limits) => mods => new() {
+        internal partial Func<CoordMods, CoordMods> Merge(CoordLimit limits) => mods => new()
+        {
             Face = (limits & CoordLimit.FaceMakeup) == CoordLimit.None ? Face : mods.Face,
             Body = (limits & CoordLimit.BodyMakeup) == CoordLimit.None ? Body : mods.Body,
             Hairs = (limits & CoordLimit.Hair) == CoordLimit.None ? Hairs : mods.Hairs,
@@ -135,7 +138,7 @@ namespace SardineHead
         {
             Load = archive =>
                 BonesToStuck<CoordMods>.Load(archive.With(Textures.Load), out var mods) ? mods :
-                    BonesToStuck<LegacyCoordMods>.Load(archive, out var legacy) ? legacy: new ();
+                    BonesToStuck<LegacyCoordMods>.Load(archive, out var legacy) ? legacy : new();
             Save = (archive, mods) =>
                 BonesToStuck<CoordMods>.Save(archive.With(Textures.Save.Apply(mods)), mods);
         }
