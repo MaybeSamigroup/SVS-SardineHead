@@ -445,7 +445,7 @@ namespace SardineHead
     {
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.1.8";
+        public const string Version = "1.1.9";
         internal static Plugin Instance;
         private Harmony Patch;
         public override bool Unload() =>
