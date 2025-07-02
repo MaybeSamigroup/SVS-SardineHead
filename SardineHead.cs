@@ -110,14 +110,6 @@ namespace SardineHead
             F.Apply(Apply, item.hair, mods) +
             F.Apply(Apply, item.cloth, mods) +
             F.Apply(Apply, item.acs, mods);
-        static void Apply(this HumanFace item, CoordMods mods) =>
-            (F.Apply(item.Wrap().Apply, mods.Face) +
-                F.Apply(item.InitBaseCustomTextureFace, item.human.transform).Ignoring() +
-                F.Apply(item.WrapCtc().Apply, mods.Face))();
-        static void Apply(this HumanBody item, CoordMods mods) =>
-            (F.Apply(item.Wrap().Apply, mods.Body) +
-                F.Apply(item.InitBaseCustomTextureBody, item.human.transform).Ignoring() +
-                F.Apply(item.WrapCtc().Apply, mods.Body))();
         static void Apply(this HumanHair item, CoordMods mods) =>
            item.hairs.ForEachIndex(mods.Apply);
         static void Apply(this HumanCloth item, CoordMods mods) =>
@@ -223,11 +215,14 @@ namespace SardineHead
         Action<Modifications> ApplyTexture => mods =>
             mods.TextureHashes.ForEach(entry => SetTexture(entry.Key, Textures.FromHash(entry.Value)));
         Action<Modifications> ApplyRenderer => mods =>
-            (Renderer != null).Maybe(() => Renderer.enabled = mods.Rendering switch
+            (Renderer != null).Maybe(mods.Rendering switch
             {
-                BoolValue.Disabled => false,
-                BoolValue.Enabled => true,
-                _ => Renderer.enabled,
+                BoolValue.Disabled =>
+                    () => Renderer.enabled = false,
+                BoolValue.Enabled =>
+                    () => Renderer.enabled = true,
+                _ =>
+                    F.DoNothing
             });
     }
     internal static class MaterialExtension

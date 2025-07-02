@@ -14,6 +14,7 @@ using ILLGames.Unity.UI.ColorPicker;
 using ImportDialog = System.Windows.Forms.OpenFileDialog;
 using ExportDialog = System.Windows.Forms.SaveFileDialog;
 using CoastalSmell;
+using ILLGames.Extensions;
 
 namespace SardineHead
 {
@@ -177,7 +178,7 @@ namespace SardineHead
             base(name, parent, wrapper, Archetype) => Edit
                 .With(UGUI.ModifyAt("State")(UGUI.Cmp<TextMeshProUGUI>(ui => Label = ui)))
                 .With(UGUI.ModifyAt("Background.Rendering", "Rendering")
-                    (UGUI.Cmp<Toggle>(ui => (Value = ui).isOn = true)))
+                    (UGUI.Cmp<Toggle>(ui => (Value = ui).Set(wrapper.Renderer.enabled, false))))
                 .With(() => Value.OnValueChangedAsObservable().Subscribe(OnChange));
         internal override void Store(Modifications mod) =>
             mod.Rendering = (Target.isOn, Value.isOn) switch
@@ -189,16 +190,14 @@ namespace SardineHead
         internal override void Apply(Modifications mod) =>
             Target.isOn = mod.Rendering switch
             {
-                BoolValue.Enabled => true.With(Value.SetIsOnWithoutNotify),
-                BoolValue.Disabled => true.With(Value.SetIsOnWithoutNotify),
-                _ => false.With(Value.SetIsOnWithoutNotify)
+                BoolValue.Enabled => true.With(F.Apply(Value.Set, true, true)),
+                BoolValue.Disabled => true.With(F.Apply(Value.Set, false, true)),
+                _ => false
             };
         internal override void Update() =>
-            Label.With(base.Update).SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
-        protected override void UpdateGet() =>
-            Value.SetIsOnWithoutNotify(Wrapper.Renderer.enabled);
-        protected override void UpdateSet() =>
-            Wrapper.Renderer.enabled = Value.isOn;
+            Label.SetText(Wrapper.Renderer.gameObject.activeInHierarchy ? "Enabled(Active)" : "Enabled(Inactive)");
+        protected override void UpdateGet() { }
+        protected override void UpdateSet() { }
     }
     internal class IntEdit : CommonEdit
     {
