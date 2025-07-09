@@ -5,6 +5,7 @@ using System.Linq;
 using System.IO.Compression;
 using System.Collections.Generic;
 using UniRx;
+using UniRx.Triggers;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -309,7 +310,9 @@ namespace SardineHead
             Hooks.OnBodyReady -= OnBodyReady;
             Hooks.OnClothesReady += OnClothesReady;
             Current.Remove(human.data);
-            Scheduler.MainThread.Schedule(Il2CppSystem.TimeSpan.FromSeconds(0.05), human.Apply(Mods));
+            human.gameObject.GetComponent<ObservableDestroyTrigger>()
+                .OnDestroyAsObservable().Subscribe(F.Ignoring<Unit>(Scheduler.MainThread
+                    .Schedule(Il2CppSystem.TimeSpan.FromSeconds(0.05), human.Apply(Mods)).Dispose));
         };
         void OnFaceReady(HumanFace item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
@@ -445,7 +448,7 @@ namespace SardineHead
     {
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "1.1.9";
+        public const string Version = "1.1.10";
         internal static Plugin Instance;
         private Harmony Patch;
         public override bool Unload() =>
