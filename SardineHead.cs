@@ -1,3 +1,4 @@
+using BepInEx;
 using HarmonyLib;
 using BepInEx.Unity.IL2CPP;
 using System;
@@ -18,25 +19,6 @@ using Fishbone;
 
 namespace SardineHead
 {
-    public struct Quad : IEquatable<Quad>
-    {
-        public float x { get; set; }
-        public float y { get; set; }
-        public float z { get; set; }
-        public float w { get; set; }
-        public Quad(float v1, float v2, float v3, float v4)
-        {
-            x = v1;
-            y = v2;
-            z = v3;
-            w = v4;
-        }
-        public static implicit operator Quad(Vector4 vs) => new(vs.x, vs.y, vs.z, vs.w);
-        public static implicit operator Vector4(Quad vs) => new(vs.x, vs.y, vs.z, vs.w);
-        public static implicit operator Quad(Color vs) => new(vs.r, vs.g, vs.b, vs.a);
-        public static implicit operator Color(Quad vs) => new(vs.x, vs.y, vs.z, vs.w);
-        public bool Equals(Quad that) => (x, y, z, w) == (that.x, that.y, that.z, that.w);
-    }
     public enum BoolValue
     {
         Unmanaged,
@@ -50,8 +32,8 @@ namespace SardineHead
         public Dictionary<string, int> IntValues { get; init; } = new();
         public Dictionary<string, float> FloatValues { get; init; } = new();
         public Dictionary<string, float> RangeValues { get; init; } = new();
-        public Dictionary<string, Quad> ColorValues { get; init; } = new();
-        public Dictionary<string, Quad> VectorValues { get; init; } = new();
+        public Dictionary<string, Float4> ColorValues { get; init; } = new();
+        public Dictionary<string, Float4> VectorValues { get; init; } = new();
         public Dictionary<string, string> TextureHashes { get; init; } = new();
     }
     [BonesToStuck(Plugin.Guid, "modifications.json")]
@@ -290,6 +272,7 @@ namespace SardineHead
     {
         static Dictionary<HumanData, ModApplicator> Current = new();
         CoordMods Mods;
+        CompositeDisposable Disposables;
         ModApplicator(HumanData data, CoordMods mods)
         {
             Mods = mods;
@@ -299,6 +282,9 @@ namespace SardineHead
             Hooks.OnFaceReady += OnFaceReady;
             Hooks.OnBodyReady += OnBodyReady;
             Hooks.OnClothesReady += OnClothesReady;
+            Disposables = new CompositeDisposable();
+            Current.TryGetValue(data, out var item).Maybe(F.Apply(Dispose, item));
+            Disposables.Add(Disposable.Create(F.Apply(Current.Remove, data).Ignoring()));
             Current.TryAdd(data, this);
         }
         Action<Human> Cleanup => human =>
@@ -309,11 +295,13 @@ namespace SardineHead
             Hooks.OnFaceReady -= OnFaceReady;
             Hooks.OnBodyReady -= OnBodyReady;
             Hooks.OnClothesReady += OnClothesReady;
-            Current.Remove(human.data);
+            Disposables.Add(Scheduler.MainThread
+                .Schedule(Il2CppSystem.TimeSpan.FromSeconds(0.05), human.Apply(Mods) + Disposables.Dispose));
             human.gameObject.GetComponent<ObservableDestroyTrigger>()
-                .OnDestroyAsObservable().Subscribe(F.Ignoring<Unit>(Scheduler.MainThread
-                    .Schedule(Il2CppSystem.TimeSpan.FromSeconds(0.05), human.Apply(Mods)).Dispose));
+                .OnDestroyAsObservable().Subscribe(F.Ignoring<Unit>(Disposables.Dispose));
         };
+        static void Dispose(ModApplicator ma) =>
+            ma.Disposables.Dispose(); 
         void OnFaceReady(HumanFace item) =>
             (Current.GetValueOrDefault(item.human.data) == this)
                 .Maybe(F.Apply(item.WrapCtc().Apply, Mods.Face));
@@ -444,6 +432,7 @@ namespace SardineHead
         internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance, int kind) =>
             OnClothesReady(__instance, kind);
     }
+    [BepInDependency(Fishbone.Plugin.Guid)]
     public partial class Plugin : BasePlugin
     {
         public const string Name = "SardineHead";

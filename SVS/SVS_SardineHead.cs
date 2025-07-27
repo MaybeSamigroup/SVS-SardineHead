@@ -155,7 +155,6 @@ namespace SardineHead
         }
     }
     [BepInProcess(Process)]
-    [BepInDependency(Fishbone.Plugin.Guid)]
     [BepInPlugin(Guid, Name, Version)]
     public partial class Plugin : BasePlugin
     {

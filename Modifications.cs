@@ -212,7 +212,7 @@ namespace SardineHead
             Load =
                 archive => archive.Entries.Where(IsTextureEntry).Where(IsNotBuffered).ForEach(LoadTexture);
             Save =
-                (mods, archive) => mods.ToTextures().ForEach(SaveTexture.Apply(archive.With(Clean)));
+                (mods, archive) => mods.ToTextures().Distinct().ForEach(SaveTexture.Apply(archive.With(Clean)));
         }
     }
 }
