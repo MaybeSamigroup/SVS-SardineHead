@@ -11,7 +11,7 @@ Runtime texture and material modifier tool for SamabakeScramble and modification
 - [Fishbone/CoastalSmell](https://github.com/MaybeSamigroup/SVS-Fishbone)
   - 2.1.2/1.0.4 or later
 
-Confirmed working under SamabakeScramble 1.1.6 and DigitalCraft 2.1.0
+Confirmed working under SamabakeScramble 1.1.6 and DigitalCraft 2.0.0
 
 ## Installation
 
