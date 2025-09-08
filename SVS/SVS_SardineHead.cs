@@ -1,9 +1,4 @@
-using HarmonyLib;
-using BepInEx;
-using BepInEx.Unity.IL2CPP;
-using BepInEx.Configuration;
 using System;
-using System.IO.Compression;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,13 +6,22 @@ using UniRx;
 using UniRx.Triggers;
 using Character;
 using CharacterCreation;
-using CharaLimit = Character.HumanData.LoadLimited.Flags;
-using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
+using HarmonyLib;
+using BepInEx;
+using BepInEx.Unity.IL2CPP;
+using BepInEx.Configuration;
 using Fishbone;
 using CoastalSmell;
 
 namespace SardineHead
 {
+    static partial class Textures
+    {
+        static Textures()
+        {
+        }
+    }
+
     internal class EditWindow
     {
         Transform ListPanel;
@@ -66,26 +70,21 @@ namespace SardineHead
             ClothesGroups.Do(entry => entry.Value.Apply(mods.Clothes.GetValueOrDefault(entry.Key, new())));
             AccessoryGroups.Do(entry => entry.Value.Apply(mods.Accessories.GetValueOrDefault(entry.Key, new())));
         }
-        CoordMods Store() => new()
-        {
-            Face = FaceGroup.Store(),
-            Body = BodyGroup.Store(),
-            Hairs = HairGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
-            Clothes = ClothesGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
-            Accessories = AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
-        };
-        void OnCharacterSerialize(HumanData data, ZipArchive archive) =>
-            CharaMods.Save(archive, CharaMods.Load(archive).Merge(data)(CoordLimit.All, Store()));
-        void OnCoordinateSerialize(HumanDataCoordinate _, ZipArchive archive) =>
-            CoordMods.Save(archive, Store());
-        void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
-            CharaMods.Save(archive, CharaMods.Load(archive).Merge(human)(CoordLimit.All, Store()));
-        void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
-            Apply(CharaMods.Load(archive).AsCoord(human));
-        void OnCharacterDeserialize(Human human, CharaLimit limits, ZipArchive archive, ZipArchive storage) =>
-            Apply(CharaMods.Load(storage).Merge(limits)(CharaMods.Load(archive)).With(CharaMods.Save.Apply(storage)).AsCoord(human));
-        void OnCoordinateDeserialize(Human human, HumanDataCoordinate coord, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
-            Apply(CharaMods.Load(storage).Merge(human)(limits, CoordMods.Load(archive)).AsCoord(human));
+        void Apply(Human human) => Apply(Extension.Coord<CharaMods, CoordMods>(human));
+        void Store(CharaMods mods, int coordinateType) => (
+            mods.Face,
+            mods.Body,
+            mods.Hairs[coordinateType],
+            mods.Clothes[coordinateType],
+            mods.Accessories[coordinateType]
+        ) = (
+            FaceGroup.Store(),
+            BodyGroup.Store(),
+            HairGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
+            ClothesGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
+            AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store())
+        );
+        void Store() => Store(HumanExtension<CharaMods, CoordMods>.Chara, HumanCustom.Instance.Human.data.Status.coordinateType);
         void Update(IEnumerable<EditGroup> groups) => groups.Do(group => group.Update());
         void Update() => Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
         static WindowHandle Handle;
@@ -96,73 +95,159 @@ namespace SardineHead
             Util<HumanCustom>.Hook(() =>
             {
                 Instance = new EditWindow();
-                Event.OnCharacterSerialize += Instance.OnCharacterSerialize;
-                Event.OnCoordinateSerialize += Instance.OnCoordinateSerialize;
-                Event.OnPreCoordinateReload += Instance.OnPreCoordinateReload;
-                Event.OnPostCoordinateReload += Instance.OnPostCoordinateReload;
-                Event.OnPostCharacterDeserialize += Instance.OnCharacterDeserialize;
-                Event.OnPostCoordinateDeserialize += Instance.OnCoordinateDeserialize;
                 Hooks.OnBodyChange += Instance.OnBodyChange;
                 Hooks.OnFaceChange += Instance.OnFaceChange;
                 Hooks.OnHairChange += Instance.OnHairChange;
                 Hooks.OnClothesChange += Instance.OnClothesChange;
                 Hooks.OnAccessoryChange += Instance.OnAccessoryChange;
+                Hooks.OnReloadingComplete += Instance.Apply;
+                Extension.PrepareSaveChara += Instance.Store; 
+                Extension.PrepareSaveCoord += Instance.Store;
             }, () =>
             {
-                Event.OnCharacterSerialize -= Instance.OnCharacterSerialize;
-                Event.OnCoordinateSerialize -= Instance.OnCoordinateSerialize;
-                Event.OnPreCoordinateReload -= Instance.OnPreCoordinateReload;
-                Event.OnPostCoordinateReload -= Instance.OnPostCoordinateReload;
-                Event.OnPostCharacterDeserialize -= Instance.OnCharacterDeserialize;
-                Event.OnPostCoordinateDeserialize -= Instance.OnCoordinateDeserialize;
                 Hooks.OnBodyChange -= Instance.OnBodyChange;
                 Hooks.OnFaceChange -= Instance.OnFaceChange;
                 Hooks.OnHairChange -= Instance.OnHairChange;
                 Hooks.OnClothesChange -= Instance.OnClothesChange;
                 Hooks.OnAccessoryChange -= Instance.OnAccessoryChange;
+                Hooks.OnReloadingComplete -= Instance.Apply;
+                Extension.PrepareSaveChara -= Instance.Store; 
+                Extension.PrepareSaveCoord -= Instance.Store;
                 Instance = null;
             });
         }
     }
-    partial class ModApplicator
+    static partial class Hooks
     {
-        static void OnPreCharacterDeserialize(HumanData data, CharaLimit limits, ZipArchive archive, ZipArchive storage) =>
-            new ModApplicator(data, CharaMods.Load(archive).AsCoord(data));
-        static void OnPreActorHumanize(SaveData.Actor actor, HumanData data, ZipArchive archive) =>
-            new ModApplicator(data, CharaMods.Load(archive).AsCoord(actor.charFile));
-        static void OnPreCoordinateReload(Human human, int type, ZipArchive archive) =>
-            new ModApplicator(human.data, CharaMods.Load(archive).AsCoord(type));
-        static void OnPreCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
-            new ModApplicator(human.data, CharaMods.Load(storage).Merge(human)(limits, CoordMods.Load(archive)).AsCoord(human));
-        static void OnPostCharacterDeserialize(Human human, CharaLimit limits, ZipArchive archive, ZipArchive storage) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
-        static void OnPostActorHumanize(SaveData.Actor actor, Human human, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
-        static void OnPostCoordinateReload(Human human, int type, ZipArchive archive) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
-        static void OnPostCoordinateDeserialize(Human human, HumanDataCoordinate _, CoordLimit limits, ZipArchive archive, ZipArchive storage) =>
-            Current.TryGetValue(human.data, out var applicator).Maybe(applicator.Cleanup.Apply(human));
-        internal static void Initialize()
-        {
-            Event.OnPreCharacterDeserialize += OnPreCharacterDeserialize;
-            Event.OnPreActorHumanize += OnPreActorHumanize;
-            Event.OnPreCoordinateReload += OnPreCoordinateReload;
-            Event.OnPreCoordinateDeserialize += OnPreCoordinateDeserialize;
-            Event.OnPostCharacterDeserialize += OnPostCharacterDeserialize;
-            Event.OnPostActorHumanize += OnPostActorHumanize;
-            Event.OnPostCoordinateReload += OnPostCoordinateReload;
-            Event.OnPostCoordinateDeserialize += OnPostCoordinateDeserialize;
-        }
+
+        internal static event Action<HumanFace> OnFaceChange = delegate { };
+        internal static event Action<HumanBody> OnBodyChange = delegate { };
+        internal static event Action<HumanHair, int> OnHairChange = delegate { };
+        internal static event Action<HumanCloth, int> OnClothesChange = delegate { };
+        internal static event Action<HumanAccessory, int> OnAccessoryChange = delegate { };
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanBody), nameof(HumanBody.InitBaseCustomTextureBody))]
+        internal static void InitBaseCustomTextureBodyPostfix(HumanBody __instance) =>
+            OnBodyChange(__instance);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanFace), nameof(HumanFace.ChangeHead), typeof(int), typeof(bool))]
+        static void ChangeHeadPostfix(HumanFace __instance) =>
+            OnFaceChange(__instance);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanHair), nameof(HumanHair.ChangeHair), typeof(int), typeof(int), typeof(bool))]
+        static void ChangeHairPostfix(HumanHair __instance, int kind) =>
+            OnHairChange(__instance, kind);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesBot), typeof(int), typeof(bool))]
+        static void ChangeClothesBotPostfix(HumanCloth __instance) =>
+            OnClothesChange(__instance, 1);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesGloves), typeof(int), typeof(bool))]
+        static void ChangeClothesGlovesPostfix(HumanCloth __instance) =>
+            OnClothesChange(__instance, 4);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesPanst), typeof(int), typeof(bool))]
+        static void ChangeClothesPanstPostfix(HumanCloth __instance) =>
+            OnClothesChange(__instance, 5);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesSocks), typeof(int), typeof(bool))]
+        static void ChangeClothesSocksPostfix(HumanCloth __instance) =>
+            OnClothesChange(__instance, 6);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesShoes), typeof(int), typeof(bool))]
+        static void ChangeClothesShoesPostfix(HumanCloth __instance) =>
+            OnClothesChange(__instance, 7);
+
+        static readonly int[] BraOnly = [2];
+        static readonly int[] ShortsOnly = [3];
+        static readonly int[] BraAndShorts = [2, 3];
+
+        [HarmonyPrefix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesBra), typeof(int), typeof(bool))]
+        static void ChangeClothesBraPrefix(HumanCloth __instance, ref bool __state) =>
+            __state = __instance.notShorts;
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesBra), typeof(int), typeof(bool))]
+        static void ChangeClothesBraPostfix(HumanCloth __instance, bool __state) =>
+            ((__state == __instance.notShorts) ? BraOnly : BraAndShorts).Do(kind => OnClothesChange(__instance, kind));
+
+        [HarmonyPrefix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesShorts), typeof(int), typeof(bool))]
+        static void ChangeClothesShortsPrefix(HumanCloth __instance, ref bool __state) =>
+            __state = __instance.notBra;
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesShorts), typeof(int), typeof(bool))]
+        static void ChangeClothesShortsPostfix(HumanCloth __instance, bool __state) =>
+            ((__state == __instance.notShorts) ? ShortsOnly : BraAndShorts).Do(kind => OnClothesChange(__instance, kind));
+        static readonly int[] TopOnly = [0];
+        static readonly int[] TopAndBot = [0, 1];
+
+        [HarmonyPrefix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesTop),
+            [typeof(HumanCloth.TopResultData), typeof(int), typeof(int), typeof(int), typeof(int), typeof(bool)],
+            [ArgumentType.Out, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal])]
+        static void ChangeClothesTopPrefix(HumanCloth __instance, ref bool __state) =>
+            __state = __instance.notBot;
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesTop),
+            [typeof(HumanCloth.TopResultData), typeof(int), typeof(int), typeof(int), typeof(int), typeof(bool)],
+            [ArgumentType.Out, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal])]
+        static void ChangeClothesTopPostfix(HumanCloth __instance, bool __state) =>
+            ((__state == __instance.notBot) ? TopOnly : TopAndBot).Do(kind => OnClothesChange(__instance, kind));
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanAccessory), nameof(HumanAccessory.ChangeAccessory),
+            typeof(int), typeof(int), typeof(int), typeof(ChaAccessoryDefine.AccessoryParentKey), typeof(bool))]
+        static void ChangeAccessoryPostfix(HumanAccessory __instance, int slotNo) =>
+            OnAccessoryChange(__instance, slotNo);
     }
+
     [BepInProcess(Process)]
     [BepInPlugin(Guid, Name, Version)]
     public partial class Plugin : BasePlugin
     {
         public const string Process = "SamabakeScramble";
-        public override void Load() =>
-            Patch = Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks")
-                .With(() => Instance = this)
-                .With(ModApplicator.Initialize)
-                .With(EditWindow.Initialize);
+        public override void Load()
+        {
+            (Instance, Patch) = (this, Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks"));
+            Extension.Register<CharaMods, CoordMods>();
+            Extension.OnPreprocessChara += (_, archive) => Textures.Load(archive);
+            Extension.OnPreprocessCoord += (_, archive) => Textures.Load(archive);
+            Extension.OnSaveChara += (archive) =>
+                Textures.Save(HumanExtension<CharaMods, CoordMods>.Chara, archive);
+            Extension.OnSaveCoord += (archive) =>
+                Textures.Save(HumanExtension<CharaMods, CoordMods>.Coord, archive);
+            Extension.OnSaveActor += (actor, archive) =>
+                Textures.Save(ActorExtension<CharaMods, CoordMods>.Chara(actor), archive);
+            Extension.OnReloadChara += human => new ModApplicator(human);
+            Extension.OnReloadCoord += human => new ModApplicator(human);
+            EditWindow.Initialize();
+        }
     }
 }

@@ -376,7 +376,7 @@ namespace SardineHead
         void Dialog<T>(string path, Action<string> action) where T : System.Windows.Forms.FileDialog, new() =>
             TryGetFilePath<T>(action).ApplyDisposable(new T()
             {
-                InitialDirectory = Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Guid, path),
+                InitialDirectory = Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Name, path),
                 Filter = "Texture Sources|*.png",
                 FileName = $"{Wrapper.GetTexture(Edit.name)?.name ?? "na"}.png",
             })();

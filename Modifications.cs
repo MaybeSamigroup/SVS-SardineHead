@@ -5,53 +5,15 @@ using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Linq;
 using UniRx;
+using UniRx.Triggers;
 using UnityEngine;
+using HarmonyLib;
+using Character;
 using Fishbone;
 using CoastalSmell;
-using CharaLimit = Character.HumanData.LoadLimited.Flags;
-using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
 
 namespace SardineHead
 {
-    public partial class LegacyCharaMods
-    {
-        public static implicit operator CharaMods(LegacyCharaMods mods) => new()
-        {
-            Face = mods.Face
-                .Select(entry => entry.Key.StartsWith("p_") ? new("/ct_face", entry.Value) : entry)
-                .Concat(mods.Eyebrows)
-                .Concat(mods.Eyelines)
-                .Concat(mods.Eyes)
-                .Concat(mods.Tooth)
-                .DistinctBy(entry => entry.Key)
-                .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Body = mods.Body
-                .Select(entry => entry.Key.StartsWith("p_") ? new("/ct_body", entry.Value) : entry)
-                .Concat(mods.Nails)
-                .DistinctBy(entry => entry.Key)
-                .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Hairs = mods.Coordinates
-                .ToDictionary(entry => entry.Key, entry => entry.Value.Hair),
-            Clothes = mods.Coordinates
-                .ToDictionary(entry => entry.Key, entry => entry.Value.Clothes
-                    .ToDictionary(entry => entry.Key, entry => entry.Value
-                        .ToDictionary(entry => entry.Key.StartsWith("ct_") ? $"/{entry.Key}" : entry.Key, entry => entry.Value))),
-            Accessories = mods.Coordinates
-                .ToDictionary(entry => entry.Key, entry => entry.Value.Accessory),
-        };
-    }
-    public partial class LegacyCoordMods
-    {
-        public static implicit operator CoordMods(LegacyCoordMods mods) => new()
-        {
-            Face = new(),
-            Body = new(),
-            Hairs = mods.Hair,
-            Clothes = mods.Clothes.ToDictionary(entry => entry.Key, entry => entry.Value
-                .ToDictionary(entry => entry.Key.StartsWith("ct_") ? $"/{entry.Key}" : entry.Key, entry => entry.Value)),
-            Accessories = mods.Accessory
-        };
-    }
     interface TextureMods
     {
         IEnumerable<string> ToTextures();
@@ -73,44 +35,6 @@ namespace SardineHead
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.TextureHashes.Values));
-        internal partial CoordMods AsCoord(int index) => new()
-        {
-            Face = Face,
-            Body = Body,
-            Hairs = Hairs.TryGetValue(index, out var hairs) ? hairs : new(),
-            Clothes = Clothes.TryGetValue(index, out var clothes) ? clothes : new(),
-            Accessories = Accessories.TryGetValue(index, out var accessories) ? accessories : new(),
-        };
-        internal partial Func<CharaMods, CharaMods> Merge(CharaLimit limits) => mods => new()
-        {
-            Face = (limits & CharaLimit.Face) == CharaLimit.None ? Face : mods.Face,
-            Body = (limits & CharaLimit.Body) == CharaLimit.None ? Body : mods.Body,
-            Hairs = (limits & CharaLimit.Hair) == CharaLimit.None ? Hairs : mods.Hairs,
-            Clothes = (limits & CharaLimit.Coorde) == CharaLimit.None ? Clothes : mods.Clothes,
-            Accessories = (limits & CharaLimit.Coorde) == CharaLimit.None ? Accessories : mods.Accessories,
-        };
-        internal partial Func<CoordLimit, CoordMods, CharaMods> Merge(int index) => (limits, mods) => new()
-        {
-            Face = (limits & CoordLimit.FaceMakeup) == CoordLimit.None ? Face : mods.Face,
-            Body = (limits & CoordLimit.BodyMakeup) == CoordLimit.None ? Body : mods.Body,
-            Hairs = (limits & CoordLimit.Hair) == CoordLimit.None ? Hairs :
-                Hairs.Where(entry => entry.Key != index).Concat([new(index, mods.Hairs)])
-                    .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Clothes = (limits & CoordLimit.Clothes) == CoordLimit.None ? Clothes :
-                Clothes.Where(entry => entry.Key != index).Concat([new(index, mods.Clothes)])
-                    .ToDictionary(entry => entry.Key, entry => entry.Value),
-            Accessories = (limits & CoordLimit.Accessory) == CoordLimit.None ? Accessories :
-                Accessories.Where(entry => entry.Key != index).Concat([new(index, mods.Accessories)])
-                    .ToDictionary(entry => entry.Key, entry => entry.Value),
-        };
-        static CharaMods()
-        {
-            Load = archive =>
-                BonesToStuck<CharaMods>.Load(archive.With(Textures.Load), out var mods) ? mods :
-                    BonesToStuck<LegacyCharaMods>.Load(archive, out var legacy) ? legacy : new();
-            Save = (archive, mods) =>
-                BonesToStuck<CharaMods>.Save(archive.With(Textures.Save.Apply(mods)), mods);
-        }
     }
     public partial class CoordMods : TextureMods
     {
@@ -126,26 +50,9 @@ namespace SardineHead
                 .Concat(Accessories.Values
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.TextureHashes.Values));
-        internal partial Func<CoordMods, CoordMods> Merge(CoordLimit limits) => mods => new()
-        {
-            Face = (limits & CoordLimit.FaceMakeup) == CoordLimit.None ? Face : mods.Face,
-            Body = (limits & CoordLimit.BodyMakeup) == CoordLimit.None ? Body : mods.Body,
-            Hairs = (limits & CoordLimit.Hair) == CoordLimit.None ? Hairs : mods.Hairs,
-            Clothes = (limits & CoordLimit.Clothes) == CoordLimit.None ? Clothes : mods.Clothes,
-            Accessories = (limits & CoordLimit.Accessory) == CoordLimit.None ? Accessories : mods.Accessories
-        };
-        static CoordMods()
-        {
-            Load = archive =>
-                BonesToStuck<CoordMods>.Load(archive.With(Textures.Load), out var mods) ? mods :
-                    BonesToStuck<LegacyCoordMods>.Load(archive, out var legacy) ? legacy : new();
-            Save = (archive, mods) =>
-                BonesToStuck<CoordMods>.Save(archive.With(Textures.Save.Apply(mods)), mods);
-        }
     }
     internal static partial class Textures
     {
-        static readonly string LegacyPath = Path.Combine(Plugin.Guid, "textures");
         static readonly string TexturePath = Path.Combine(Plugin.Name, "textures");
         static Dictionary<string, byte[]> Buffers = new();
         static Action<byte[], string> StoreBuffer =
@@ -179,40 +86,105 @@ namespace SardineHead
         static Action<RenderTexture> SwitchActive =
             tex => RenderTexture.active = tex;
         static Func<ZipArchiveEntry, bool> IsTextureEntry =
-            entry => entry.FullName.StartsWith(TexturePath) || entry.FullName.StartsWith(LegacyPath);
+            entry => entry.FullName.StartsWith(TexturePath);
         static Func<ZipArchiveEntry, bool> IsNotBuffered =
             entry => !IsExtension(entry.Name);
-        static Action<ZipArchiveEntry> LoadTexture =
+        static Action<ZipArchiveEntry> LoadTextures =
             entry => LoadBuffer.Apply(entry.Name).Apply(entry.Length)
                 .ApplyDisposable(new BinaryReader(entry.Open())).Try(Plugin.Instance.Log.LogError);
         static Action<string, long, BinaryReader> LoadBuffer =
             (hash, size, reader) => Buffers[hash] = reader.ReadBytes((int)size);
-        static Action<ZipArchive, string> SaveTexture =
+        static Action<ZipArchive, string> SaveTextures =
            (archive, hash) => SaveTextureToArchive.Apply(Buffers[hash])
                .ApplyDisposable(new BinaryWriter(archive.CreateEntry(Path.Combine(TexturePath, hash)).Open()))
                .Try(Plugin.Instance.Log.LogError);
         static Action<byte[], BinaryWriter> SaveTextureToArchive =
             (data, writer) => writer.Write(data);
-        static Func<ZipArchiveEntry, bool> IsExtensionEntry =
-            entry => entry.FullName.StartsWith(Plugin.Guid) || entry.FullName.StartsWith(Plugin.Name);
-        static Action<ZipArchiveEntry> Delete =
-            entry => F.Try(entry.Delete, Plugin.Instance.Log.LogError);
-        internal static Action<ZipArchive> Clean =
-            archive => archive.Entries.Where(IsExtensionEntry).ForEach(Delete);
-        static Textures()
+        internal static Action<ZipArchive> Load =
+            archive => archive.Entries.Where(IsTextureEntry).Where(IsNotBuffered).ForEach(LoadTextures);
+        internal static Action<TextureMods, ZipArchive> Save =
+            (mods, archive) => mods.ToTextures().Distinct().ForEach(SaveTextures.Apply(archive));
+    }
+    partial class ModApplicator
+    {
+        static Dictionary<Human, CompositeDisposable> Current = new();
+        Human Target;
+        CoordMods Mods;
+        static void Prepare(Human human) =>
+            human.gameObject.GetComponent<ObservableDestroyTrigger>()
+                .OnDestroyAsObservable().Subscribe(F.Apply(Dispose, human).Ignoring<Unit>());
+        static void Dispose(Human human) =>
+            (Current.TryGetValue(human, out var item) && Current.Remove(human)).Maybe(F.Apply(Dispose, item));
+        static void Dispose(CompositeDisposable item) =>
+            (!item.IsDisposed).Maybe(item.Dispose); 
+        internal ModApplicator(Human human)
         {
-            IsExtension =
-               hash => hash != null && Buffers.ContainsKey(hash);
-            FromHash =
-               hash => IsExtension(hash) ? BytesToTexture(Buffers[hash]) : default;
-            FromFile =
-                path => BytesToTexture(File.ReadAllBytes(path));
-            ToFile =
-                (tex, path) => File.WriteAllBytes(path, TextureToTexture2d(tex).EncodeToPNG());
-            Load =
-                archive => archive.Entries.Where(IsTextureEntry).Where(IsNotBuffered).ForEach(LoadTexture);
-            Save =
-                (mods, archive) => mods.ToTextures().Distinct().ForEach(SaveTexture.Apply(archive.With(Clean)));
+            (Target, Mods) = (human, Extension.Coord<CharaMods, CoordMods>(human));
+            Current.TryGetValue(Target, out var item)
+                .Either(F.Apply(Prepare, Target), F.Apply(Dispose, item));
+            Current[Target] = new CompositeDisposable();
+            Hooks.OnFaceReady += OnFaceReady;
+            Hooks.OnBodyReady += OnBodyReady;
+            Hooks.OnClothesReady += OnClothesReady;
+            Hooks.OnReloadingComplete += OnReloadingComplete;
+            Current[Target].Add(Disposable.Create((Action)Clean));
         }
+        void Clean() {
+            Hooks.OnFaceReady -= OnFaceReady;
+            Hooks.OnBodyReady -= OnBodyReady;
+            Hooks.OnClothesReady -= OnClothesReady;
+            Hooks.OnReloadingComplete -= OnReloadingComplete;
+        }
+        void Apply() =>
+            Current[Target].Add(Scheduler.MainThread.Schedule(
+                Il2CppSystem.TimeSpan.FromSeconds(0.05), F.Apply(Target.Apply, Mods)));
+        void OnFaceReady(HumanFace item) =>
+            (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
+        void OnBodyReady(HumanBody item) =>
+            (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
+        void OnClothesReady(HumanCloth item, int index) =>
+            (item.human == Target).Maybe(F.Apply(item.clothess[index].Apply, index, Mods));
+        void OnReloadingComplete(Human human) =>
+            (human == Target).Maybe(Apply);
+    }
+    static partial class Hooks
+    {
+        internal static event Action<HumanFace> OnFaceReady = delegate { };
+        internal static event Action<HumanBody> OnBodyReady = delegate { };
+        internal static event Action<HumanCloth, int> OnClothesReady = delegate { };
+        internal static event Action<Human> OnReloadingComplete = delegate { };
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanFace), nameof(HumanFace.CreateFaceTexture))]
+        internal static void HumanFaceCreateFaceTexturePostfix(HumanFace __instance) =>
+            OnFaceReady(__instance);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanBody), nameof(HumanBody.CreateBodyTexture))]
+        internal static void HumanBodyCreataBodyTexturePostfix(HumanBody __instance) =>
+            OnBodyReady(__instance);
+
+        [HarmonyPostfix]
+        [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.CreateClothesTexture))]
+        internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance, int kind) =>
+            OnClothesReady(__instance, kind);
+
+        [HarmonyPostfix, HarmonyWrapSafe]
+        [HarmonyPatch(typeof(Human.Reloading), nameof(Human.Reloading.Dispose))]
+        internal static void HumanReloadingDisposePostfix(Human.Reloading __instance) =>
+            (!__instance._isReloading).Maybe(F.Apply(OnReloadingComplete, __instance._human));
+
+        [HarmonyPostfix, HarmonyWrapSafe]
+        [HarmonyPatch(typeof(Human), nameof(Human.Reload), [])]
+        static void HumanReloadPostfix(Human __instance) =>
+            (!__instance.isReloading).Maybe(F.Apply(OnReloadingComplete, __instance)); 
+
+        [HarmonyPostfix, HarmonyWrapSafe]
+        [HarmonyPatch(typeof(Human), nameof(Human.ReloadCoordinate), [])]
+        static void HumanReloadCoordinatePostfix(Human __instance) =>
+            (!__instance.isReloading).Maybe(F.Apply(OnReloadingComplete, __instance)); 
     }
 }

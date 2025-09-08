@@ -9,7 +9,7 @@ Runtime texture and material modifier tool for SamabakeScramble and modification
   - BepInEx.ConfigurationManager
   - SVS_BepisPlugins
 - [Fishbone/CoastalSmell](https://github.com/MaybeSamigroup/SVS-Fishbone)
-  - 2.1.2/1.0.4 or later
+  - 3.0.0/1.0.6 or later
 
 Confirmed working under SamabakeScramble 1.1.6 and DigitalCraft 2.0.0
 
@@ -26,9 +26,7 @@ Plugin assembly names are now SVS_SardineHead.dll and DC_SardineHead.dll.
 These directories contained in previous releases are no longer used.
 Please delete it.
 
-- (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/chara
-- (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/default
-- (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/textures
+- (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead
 
 ## How to use
 
