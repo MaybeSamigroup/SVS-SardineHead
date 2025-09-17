@@ -1,4 +1,3 @@
-using HarmonyLib;
 using BepInEx;
 using System;
 using System.IO;
@@ -442,15 +441,15 @@ namespace SardineHead
                 _ => throw new NotImplementedException()
             };
         void Store(Modifications mod) =>
-            Edits.Do(edit => edit.Store(mod));
+            Edits.ForEach(edit => edit.Store(mod));
         void Apply(Modifications mod) =>
-            Edits.Do(edit => edit.Apply(mod));
+            Edits.ForEach(edit => edit.Apply(mod));
         internal void Store(Dictionary<string, Modifications> mods) =>
             mods[Panel.name] = new Modifications().With(Store);
         internal void Apply(Dictionary<string, Modifications> mods) =>
             Apply(mods.GetValueOrDefault(Panel.name, new Modifications()));
         internal void Update() =>
-            Panel.active.Maybe(() => Edits.Do(edit => edit.Update()));
+            Panel.active.Maybe(() => Edits.ForEach(edit => edit.Update()));
         internal void Dispose()
         {
             UnityEngine.Object.Destroy(Toggle);
@@ -473,14 +472,14 @@ namespace SardineHead
                 .Select(entry => new EditView(handle, entry.Key, entry.Value, UI.Toggle(entry.Key, Toggles)
                     .With(UGUI.Cmp<Toggle, ToggleGroup>((ui, group) => ui.group = group)), editParent)).ToList()).Count > 0;
         void Store(Dictionary<string, Modifications> mods) =>
-            EditViews.Do(edits => edits.Store(mods));
+            EditViews.ForEach(edits => edits.Store(mods));
         internal Dictionary<string, Modifications> Store() =>
             new Dictionary<string, Modifications>().With(Store);
         internal void Apply(Dictionary<string, Modifications> mods) =>
-            EditViews.Do(edits => edits.Apply(mods));
+            EditViews.ForEach(edits => edits.Apply(mods));
         internal void Update() =>
-            EditViews.Do(edits => edits.Update());
+            EditViews.ForEach(edits => edits.Update());
         internal void Dispose() =>
-            EditViews.Do(edits => edits.Dispose());
+            EditViews.ForEach(edits => edits.Dispose());
     }
 }

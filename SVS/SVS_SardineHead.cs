@@ -15,13 +15,6 @@ using CoastalSmell;
 
 namespace SardineHead
 {
-    static partial class Textures
-    {
-        static Textures()
-        {
-        }
-    }
-
     internal class EditWindow
     {
         Transform ListPanel;
@@ -70,7 +63,6 @@ namespace SardineHead
             ClothesGroups.Do(entry => entry.Value.Apply(mods.Clothes.GetValueOrDefault(entry.Key, new())));
             AccessoryGroups.Do(entry => entry.Value.Apply(mods.Accessories.GetValueOrDefault(entry.Key, new())));
         }
-        void Apply(Human human) => Apply(Extension.Coord<CharaMods, CoordMods>(human));
         void Store(CharaMods mods, int coordinateType) => (
             mods.Face,
             mods.Body,
@@ -84,9 +76,11 @@ namespace SardineHead
             ClothesGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
             AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store())
         );
+        void Apply() => Apply(HumanExtension<CharaMods, CoordMods>.Coord);
         void Store() => Store(HumanExtension<CharaMods, CoordMods>.Chara, HumanCustom.Instance.Human.data.Status.coordinateType);
         void Update(IEnumerable<EditGroup> groups) => groups.Do(group => group.Update());
-        void Update() => Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
+        void Update() =>
+            Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
         static WindowHandle Handle;
         static EditWindow Instance;
         internal static void Initialize()
@@ -100,9 +94,10 @@ namespace SardineHead
                 Hooks.OnHairChange += Instance.OnHairChange;
                 Hooks.OnClothesChange += Instance.OnClothesChange;
                 Hooks.OnAccessoryChange += Instance.OnAccessoryChange;
-                Hooks.OnReloadingComplete += Instance.Apply;
                 Extension.PrepareSaveChara += Instance.Store; 
                 Extension.PrepareSaveCoord += Instance.Store;
+                ModApplicator.OnApplicationComplete += Instance.Apply;
+                Util.OnCustomHumanReady(Hooks.OnCustomLoaded);
             }, () =>
             {
                 Hooks.OnBodyChange -= Instance.OnBodyChange;
@@ -110,9 +105,9 @@ namespace SardineHead
                 Hooks.OnHairChange -= Instance.OnHairChange;
                 Hooks.OnClothesChange -= Instance.OnClothesChange;
                 Hooks.OnAccessoryChange -= Instance.OnAccessoryChange;
-                Hooks.OnReloadingComplete -= Instance.Apply;
                 Extension.PrepareSaveChara -= Instance.Store; 
                 Extension.PrepareSaveCoord -= Instance.Store;
+                ModApplicator.OnApplicationComplete -= Instance.Apply;
                 Instance = null;
             });
         }
@@ -226,6 +221,12 @@ namespace SardineHead
             typeof(int), typeof(int), typeof(int), typeof(ChaAccessoryDefine.AccessoryParentKey), typeof(bool))]
         static void ChangeAccessoryPostfix(HumanAccessory __instance, int slotNo) =>
             OnAccessoryChange(__instance, slotNo);
+
+        internal static void OnCustomLoaded() =>
+            OnReloadingComplete(HumanCustom.Instance.Human);
+
+        internal static void OnActorLoaded(SaveData.Actor _, Human human) =>
+            OnReloadingComplete(human);
     }
 
     [BepInProcess(Process)]
@@ -245,8 +246,10 @@ namespace SardineHead
                 Textures.Save(HumanExtension<CharaMods, CoordMods>.Coord, archive);
             Extension.OnSaveActor += (actor, archive) =>
                 Textures.Save(ActorExtension<CharaMods, CoordMods>.Chara(actor), archive);
-            Extension.OnReloadChara += human => new ModApplicator(human);
-            Extension.OnReloadCoord += human => new ModApplicator(human);
+            Extension.OnLoadChara += human => new ModApplicator(human);
+            Extension.OnLoadCoord += human => new ModApplicator(human);
+            Extension.OnLoadActorChara += Hooks.OnActorLoaded; 
+            Extension.OnLoadActorCoord += Hooks.OnActorLoaded; 
             EditWindow.Initialize();
         }
     }

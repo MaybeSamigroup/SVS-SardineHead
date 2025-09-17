@@ -19,8 +19,8 @@ namespace SardineHead
             Extension.OnSaveChara += (human, archive) =>
                 Textures.Save(HumanExtension<CharaMods, CoordMods>.Chara(human), archive);
             Extension.Register<CharaMods, CoordMods>();
-            Extension.OnReloadChara += human => new ModApplicator(human);
-            Extension.OnReloadCoord += human => new ModApplicator(human);
+            Extension.OnLoadChara += human => new ModApplicator(human);
+            Extension.OnLoadCoord += human => new ModApplicator(human);
         }
     }
 }

@@ -105,8 +105,9 @@ namespace SardineHead
         internal static Action<TextureMods, ZipArchive> Save =
             (mods, archive) => mods.ToTextures().Distinct().ForEach(SaveTextures.Apply(archive));
     }
-    partial class ModApplicator
+    class ModApplicator
     {
+        internal static event Action OnApplicationComplete = delegate { };
         static Dictionary<Human, CompositeDisposable> Current = new();
         Human Target;
         CoordMods Mods;
@@ -117,9 +118,10 @@ namespace SardineHead
             (Current.TryGetValue(human, out var item) && Current.Remove(human)).Maybe(F.Apply(Dispose, item));
         static void Dispose(CompositeDisposable item) =>
             (!item.IsDisposed).Maybe(item.Dispose); 
+
         internal ModApplicator(Human human)
         {
-            (Target, Mods) = (human, Extension.Coord<CharaMods, CoordMods>(human));
+            (Target, Mods) = (human, Extension.Coord<CharaMods, CoordMods>(human)); 
             Current.TryGetValue(Target, out var item)
                 .Either(F.Apply(Prepare, Target), F.Apply(Dispose, item));
             Current[Target] = new CompositeDisposable();
@@ -137,13 +139,14 @@ namespace SardineHead
         }
         void Apply() =>
             Current[Target].Add(Scheduler.MainThread.Schedule(
-                Il2CppSystem.TimeSpan.FromSeconds(0.05), F.Apply(Target.Apply, Mods)));
+                Il2CppSystem.TimeSpan.FromSeconds(0.1),
+                F.Apply(Target.Apply, Mods) + OnApplicationComplete));
         void OnFaceReady(HumanFace item) =>
             (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
         void OnBodyReady(HumanBody item) =>
             (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
         void OnClothesReady(HumanCloth item, int index) =>
-            (item.human == Target).Maybe(F.Apply(item.clothess[index].Apply, index, Mods));
+            (item.human == Target).Maybe(F.Apply(item.clothess[index].Apply, Mods, index));
         void OnReloadingComplete(Human human) =>
             (human == Target).Maybe(Apply);
     }
@@ -173,18 +176,23 @@ namespace SardineHead
             OnClothesReady(__instance, kind);
 
         [HarmonyPostfix, HarmonyWrapSafe]
-        [HarmonyPatch(typeof(Human.Reloading), nameof(Human.Reloading.Dispose))]
-        internal static void HumanReloadingDisposePostfix(Human.Reloading __instance) =>
-            (!__instance._isReloading).Maybe(F.Apply(OnReloadingComplete, __instance._human));
+        [HarmonyPatch(typeof(Human), nameof(Human.Create))]
+        static void HumanCreatePostfix(Human __result) =>
+            OnReloadingComplete(__result);
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human), nameof(Human.Reload), [])]
         static void HumanReloadPostfix(Human __instance) =>
-            (!__instance.isReloading).Maybe(F.Apply(OnReloadingComplete, __instance)); 
+            OnReloadingComplete(__instance); 
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human), nameof(Human.ReloadCoordinate), [])]
         static void HumanReloadCoordinatePostfix(Human __instance) =>
-            (!__instance.isReloading).Maybe(F.Apply(OnReloadingComplete, __instance)); 
+            OnReloadingComplete(__instance); 
+
+        [HarmonyPostfix, HarmonyWrapSafe]
+        [HarmonyPatch(typeof(Human.Reloading), nameof(Human.Reloading.Dispose))]
+        internal static void HumanReloadingDisposePostfix(Human.Reloading __instance) =>
+            (!__instance._isReloading).Maybe(F.Apply(OnReloadingComplete, __instance._human));
     }
 }
