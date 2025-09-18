@@ -222,6 +222,11 @@ namespace SardineHead
         static void ChangeAccessoryPostfix(HumanAccessory __instance, int slotNo) =>
             OnAccessoryChange(__instance, slotNo);
 
+        [HarmonyPostfix, HarmonyWrapSafe]
+        [HarmonyPatch(typeof(SaveData.CharaData), nameof(SaveData.CharaData.SetRoot))]
+        static void SaveDataCharaDataSetRootPostfix(SaveData.CharaData __instance) =>
+            (__instance.chaCtrl != null).Maybe(F.Apply(OnReloadingComplete, __instance.chaCtrl));
+
         internal static void OnCustomLoaded() =>
             OnReloadingComplete(HumanCustom.Instance.Human);
 

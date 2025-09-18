@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UniRx;
 using UniRx.Triggers;
+using Cysharp.Threading.Tasks;
+using Il2CppSystem.Threading;
 using UnityEngine;
 using HarmonyLib;
 using Character;
@@ -117,11 +119,10 @@ namespace SardineHead
         static void Dispose(Human human) =>
             (Current.TryGetValue(human, out var item) && Current.Remove(human)).Maybe(F.Apply(Dispose, item));
         static void Dispose(CompositeDisposable item) =>
-            (!item.IsDisposed).Maybe(item.Dispose); 
-
+            (!item.IsDisposed).Maybe(item.Dispose);
         internal ModApplicator(Human human)
         {
-            (Target, Mods) = (human, Extension.Coord<CharaMods, CoordMods>(human)); 
+            (Target, Mods) = (human, Extension.Coord<CharaMods, CoordMods>(human));
             Current.TryGetValue(Target, out var item)
                 .Either(F.Apply(Prepare, Target), F.Apply(Dispose, item));
             Current[Target] = new CompositeDisposable();
@@ -131,16 +132,24 @@ namespace SardineHead
             Hooks.OnReloadingComplete += OnReloadingComplete;
             Current[Target].Add(Disposable.Create((Action)Clean));
         }
-        void Clean() {
+        void Clean()
+        {
             Hooks.OnFaceReady -= OnFaceReady;
             Hooks.OnBodyReady -= OnBodyReady;
             Hooks.OnClothesReady -= OnClothesReady;
             Hooks.OnReloadingComplete -= OnReloadingComplete;
         }
+
+        void NotifyComplete() =>
+            OnApplicationComplete();
+
+        void Prepare(CancellationTokenSource cts) =>
+            UniTask.DelayFrame(10, PlayerLoopTiming.Update, cts.Token)
+                .ContinueWith(F.Apply(Target.Apply, Mods) + NotifyComplete);
         void Apply() =>
-            Current[Target].Add(Scheduler.MainThread.Schedule(
-                Il2CppSystem.TimeSpan.FromSeconds(0.1),
-                F.Apply(Target.Apply, Mods) + OnApplicationComplete));
+            Current[Target].With(Clean)
+                .Add(Disposable.Create((Action)new CancellationTokenSource().With(Prepare).Cancel));
+
         void OnFaceReady(HumanFace item) =>
             (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
         void OnBodyReady(HumanBody item) =>
@@ -183,12 +192,13 @@ namespace SardineHead
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human), nameof(Human.Reload), [])]
         static void HumanReloadPostfix(Human __instance) =>
-            OnReloadingComplete(__instance); 
+            OnReloadingComplete(__instance);
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human), nameof(Human.ReloadCoordinate), [])]
+        [HarmonyPatch(typeof(Human), nameof(Human.ReloadCoordinate), typeof(Human.ReloadFlags))]
         static void HumanReloadCoordinatePostfix(Human __instance) =>
-            OnReloadingComplete(__instance); 
+            OnReloadingComplete(__instance);
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human.Reloading), nameof(Human.Reloading.Dispose))]
