@@ -1,18 +1,17 @@
 using System;
-using System.IO;
-using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Collections.Generic;
 using System.Linq;
 using UniRx;
 using UniRx.Triggers;
 using Cysharp.Threading.Tasks;
 using Il2CppSystem.Threading;
-using UnityEngine;
 using HarmonyLib;
 using Character;
 using Fishbone;
 using CoastalSmell;
+using CharaLimit = Character.HumanData.LoadLimited.Flags;
+using CoordLimit = Character.HumanDataCoordinate.LoadLimited.Flags;
+using Mods = System.Collections.Generic.Dictionary<string, SardineHead.Modifications>;
 
 namespace SardineHead
 {
@@ -20,8 +19,55 @@ namespace SardineHead
     {
         IEnumerable<string> ToTextures();
     }
-    public partial class CharaMods : TextureMods
+    public enum BoolValue
     {
+        Unmanaged,
+        Enabled,
+        Disabled
+    }
+    public class Modifications
+    {
+        public string Shader { get; set; } = null;
+        public BoolValue Rendering { get; set; } = BoolValue.Unmanaged;
+        public Dictionary<string, int> IntValues { get; init; } = new();
+        public Dictionary<string, float> FloatValues { get; init; } = new();
+        public Dictionary<string, float> RangeValues { get; init; } = new();
+        public Dictionary<string, Float4> ColorValues { get; init; } = new();
+        public Dictionary<string, Float4> VectorValues { get; init; } = new();
+        public Dictionary<string, string> TextureHashes { get; init; } = new();
+    }
+    [Extension<CharaMods, CoordMods>(Plugin.Name, "modifications.json")]
+    public class CharaMods : CharacterExtension<CharaMods>, ComplexExtension<CharaMods, CoordMods>, TextureMods
+    {
+        public Mods Face { get; set; } = new();
+        public Mods Body { get; set; } = new();
+        public Dictionary<int, Dictionary<int, Mods>> Hairs { get; set; } = new();
+        public Dictionary<int, Dictionary<int, Mods>> Clothes { get; set; } = new();
+        public Dictionary<int, Dictionary<int, Mods>> Accessories { get; set; } = new();
+        public CoordMods Get(int coordinateType) => new()
+        {
+            Face = Face,
+            Body = Body,
+            Hairs = Hairs.TryGetValue(coordinateType, out var hairs) ? hairs : new(),
+            Clothes = Clothes.TryGetValue(coordinateType, out var clothes) ? clothes : new(),
+            Accessories = Accessories.TryGetValue(coordinateType, out var accessories) ? accessories : new(),
+        };
+        public CharaMods Merge(CharaLimit limit, CharaMods mods) => new()
+        {
+            Face = (limit & CharaLimit.Face) == CharaLimit.None ? Face : mods.Face,
+            Body = (limit & CharaLimit.Body) == CharaLimit.None ? Body : mods.Body,
+            Hairs = (limit & CharaLimit.Hair) == CharaLimit.None ? Hairs : mods.Hairs,
+            Clothes = (limit & CharaLimit.Coorde) == CharaLimit.None ? Clothes : mods.Clothes,
+            Accessories = (limit & CharaLimit.Coorde) == CharaLimit.None ? Accessories : mods.Accessories,
+        };
+        public CharaMods Merge(int coordinateType, CoordMods mods) => new()
+        {
+            Face = Face,
+            Body = Body,
+            Hairs = Hairs.Merge(coordinateType, mods.Hairs),
+            Clothes = Clothes.Merge(coordinateType, mods.Clothes),
+            Accessories = Accessories.Merge(coordinateType, mods.Accessories),
+        };
         public IEnumerable<string> ToTextures() =>
             Face.Values.SelectMany(item => item.TextureHashes.Values)
                 .Concat(Body.Values.SelectMany(item => item.TextureHashes.Values))
@@ -38,8 +84,21 @@ namespace SardineHead
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.TextureHashes.Values));
     }
-    public partial class CoordMods : TextureMods
+    public class CoordMods : CoordinateExtension<CoordMods>, TextureMods
     {
+        public Mods Face { get; set; } = new();
+        public Mods Body { get; set; } = new();
+        public Dictionary<int, Mods> Hairs { get; set; } = new();
+        public Dictionary<int, Mods> Clothes { get; set; } = new();
+        public Dictionary<int, Mods> Accessories { get; set; } = new();
+        public CoordMods Merge(CoordLimit limit, CoordMods mods) => new()
+        {
+            Face = (limit & CoordLimit.FaceMakeup) == CoordLimit.None ? Face : mods.Face,
+            Body = (limit & CoordLimit.BodyMakeup) == CoordLimit.None ? Body : mods.Body,
+            Hairs = (limit & CoordLimit.Hair) == CoordLimit.None ? Hairs : mods.Hairs,
+            Clothes = (limit & CoordLimit.Clothes) == CoordLimit.None ? Clothes : mods.Clothes,
+            Accessories = (limit & CoordLimit.Accessory) == CoordLimit.None ? Accessories : mods.Accessories
+        };
         public IEnumerable<string> ToTextures() =>
             Face.Values.SelectMany(item => item.TextureHashes.Values)
                 .Concat(Body.Values.SelectMany(item => item.TextureHashes.Values))
@@ -52,60 +111,6 @@ namespace SardineHead
                 .Concat(Accessories.Values
                     .SelectMany(item => item.Values)
                     .SelectMany(item => item.TextureHashes.Values));
-    }
-    internal static partial class Textures
-    {
-        static readonly string TexturePath = Path.Combine(Plugin.Name, "textures");
-        static Dictionary<string, byte[]> Buffers = new();
-        static Action<byte[], string> StoreBuffer =
-            (data, hash) => Buffers.TryAdd(hash, data);
-        static Func<SHA256, byte[], string> ComputeHashAndStore =
-            (sha256, data) => Convert.ToHexString(sha256.ComputeHash(data)).With(StoreBuffer.Apply(data));
-        static Action<byte[], RenderTexture> StoreTexture =
-            (data, texture) => texture.name = ComputeHashAndStore.ApplyDisposable(SHA256.Create())(data);
-        static Action<Texture2D, RenderTexture> GraphicsBlit = Graphics.Blit;
-        static Func<byte[], RenderTexture> BytesToTexture =
-            data => TryBytesToTexture2D(data, out var t2d)
-                ? ToRenderTexture(t2d).With(StoreTexture.Apply(data)) : default;
-        static bool TryBytesToTexture2D(byte[] data, out Texture2D t2d) =>
-            (t2d = new Texture2D(256, 256)).LoadImage(data);
-        static Func<Texture2D, RenderTexture> ToRenderTexture =
-            t2d => new RenderTexture(t2d.width, t2d.height, 0).With(GraphicsBlit.Apply(t2d));
-        static Func<Texture, Texture2D> TextureToTexture2d =
-            tex => new Texture2D(tex.width, tex.height)
-                .With(ToTexture2d
-                    .Apply(RenderTexture.active)
-                    .Apply(RenderTexture.GetTemporary(tex.width, tex.height))
-                    .Apply(tex));
-        static Action<RenderTexture, RenderTexture, Texture, Texture2D> ToTexture2d =
-            (org, tmp, tex, t2d) => t2d
-                .With(SwitchActive.Apply(tmp))
-                .With(F.Apply(GL.Clear, false, true, new Color()))
-                .With(F.Apply(Graphics.Blit, tex, tmp))
-                .With(F.Apply(t2d.ReadPixels, new Rect(0, 0, t2d.width, t2d.height), 0, 0))
-                .With(SwitchActive.Apply(org))
-                .With(F.Apply(RenderTexture.ReleaseTemporary, tmp));
-        static Action<RenderTexture> SwitchActive =
-            tex => RenderTexture.active = tex;
-        static Func<ZipArchiveEntry, bool> IsTextureEntry =
-            entry => entry.FullName.StartsWith(TexturePath);
-        static Func<ZipArchiveEntry, bool> IsNotBuffered =
-            entry => !IsExtension(entry.Name);
-        static Action<ZipArchiveEntry> LoadTextures =
-            entry => LoadBuffer.Apply(entry.Name).Apply(entry.Length)
-                .ApplyDisposable(new BinaryReader(entry.Open())).Try(Plugin.Instance.Log.LogError);
-        static Action<string, long, BinaryReader> LoadBuffer =
-            (hash, size, reader) => Buffers[hash] = reader.ReadBytes((int)size);
-        static Action<ZipArchive, string> SaveTextures =
-           (archive, hash) => SaveTextureToArchive.Apply(Buffers[hash])
-               .ApplyDisposable(new BinaryWriter(archive.CreateEntry(Path.Combine(TexturePath, hash)).Open()))
-               .Try(Plugin.Instance.Log.LogError);
-        static Action<byte[], BinaryWriter> SaveTextureToArchive =
-            (data, writer) => writer.Write(data);
-        internal static Action<ZipArchive> Load =
-            archive => archive.Entries.Where(IsTextureEntry).Where(IsNotBuffered).ForEach(LoadTextures);
-        internal static Action<TextureMods, ZipArchive> Save =
-            (mods, archive) => mods.ToTextures().Distinct().ForEach(SaveTextures.Apply(archive));
     }
     class ModApplicator
     {

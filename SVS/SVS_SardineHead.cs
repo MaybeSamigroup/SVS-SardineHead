@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -242,19 +243,27 @@ namespace SardineHead
         public override void Load()
         {
             (Instance, Patch) = (this, Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks"));
-            Extension.Register<CharaMods, CoordMods>();
+
             Extension.OnPreprocessChara += (_, archive) => Textures.Load(archive);
             Extension.OnPreprocessCoord += (_, archive) => Textures.Load(archive);
+
+            Extension.OnPreprocessChara += Extension<CharaMods, CoordMods>
+                .Translate<LegacyCharaMods>(Path.Combine(Guid, "modifications.json"), mods => mods);
+            Extension.OnPreprocessCoord += Extension<CharaMods, CoordMods>
+                .Translate<LegacyCoordMods>(Path.Combine(Guid, "modifications.json"), mods => mods);
+
+            Extension.Register<CharaMods, CoordMods>();
+            Extension.OnLoadChara += human => new ModApplicator(human);
+            Extension.OnLoadCoord += human => new ModApplicator(human);
+            Extension.OnLoadActorChara += Hooks.OnActorLoaded; 
+            Extension.OnLoadActorCoord += Hooks.OnActorLoaded; 
+
             Extension.OnSaveChara += (archive) =>
                 Textures.Save(HumanExtension<CharaMods, CoordMods>.Chara, archive);
             Extension.OnSaveCoord += (archive) =>
                 Textures.Save(HumanExtension<CharaMods, CoordMods>.Coord, archive);
             Extension.OnSaveActor += (actor, archive) =>
                 Textures.Save(ActorExtension<CharaMods, CoordMods>.Chara(actor), archive);
-            Extension.OnLoadChara += human => new ModApplicator(human);
-            Extension.OnLoadCoord += human => new ModApplicator(human);
-            Extension.OnLoadActorChara += Hooks.OnActorLoaded; 
-            Extension.OnLoadActorCoord += Hooks.OnActorLoaded; 
             EditWindow.Initialize();
         }
     }
