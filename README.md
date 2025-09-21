@@ -23,10 +23,19 @@ Remove SardineHead.dll from BepinEx/plugins.
 
 Plugin assembly names are now SVS_SardineHead.dll and DC_SardineHead.dll.
 
+These directories contained in previous releases are no longer used. Please delete it.
+
+(GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/chara
+(GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/default
+(GameRoot)/UserData/plugins/SamabakeScramble.SardineHead/textures
+
+## Migration from 1.X.X to 2.X.X
+
 These directories contained in previous releases are no longer used.
-Please delete it.
+Please move it contents to new one and delete it.
 
 - (GameRoot)/UserData/plugins/SamabakeScramble.SardineHead
+  - New! (GameRoot)/UserData/plugins/SardineHead
 
 ## How to use
 
