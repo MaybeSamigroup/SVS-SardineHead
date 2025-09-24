@@ -257,12 +257,16 @@ namespace SardineHead
         internal static Action<Texture, string> ToFile =
             (tex, path) => File.WriteAllBytes(path, TextureToTexture2d(tex).EncodeToPNG());
     }
+
+    [BepInProcess(Process)]
     [BepInDependency(Fishbone.Plugin.Guid)]
+    [BepInDependency(VarietyOfScales.Plugin.Guid, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInPlugin(Guid, Name, Version)]
     public partial class Plugin : BasePlugin
     {
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "2.0.0";
+        public const string Version = "2.0.1";
         internal static Plugin Instance;
         private Harmony Patch;
         public override bool Unload() =>

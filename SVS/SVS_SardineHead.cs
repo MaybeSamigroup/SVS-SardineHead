@@ -8,7 +8,6 @@ using UniRx.Triggers;
 using Character;
 using CharacterCreation;
 using HarmonyLib;
-using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using Fishbone;
@@ -64,21 +63,15 @@ namespace SardineHead
             ClothesGroups.Do(entry => entry.Value.Apply(mods.Clothes.GetValueOrDefault(entry.Key, new())));
             AccessoryGroups.Do(entry => entry.Value.Apply(mods.Accessories.GetValueOrDefault(entry.Key, new())));
         }
-        void Store(CharaMods mods, int coordinateType) => (
-            mods.Face,
-            mods.Body,
-            mods.Hairs[coordinateType],
-            mods.Clothes[coordinateType],
-            mods.Accessories[coordinateType]
-        ) = (
-            FaceGroup.Store(),
-            BodyGroup.Store(),
-            HairGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
-            ClothesGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
-            AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store())
-        );
         void Apply() => Apply(HumanExtension<CharaMods, CoordMods>.Coord);
-        void Store() => Store(HumanExtension<CharaMods, CoordMods>.Chara, HumanCustom.Instance.Human.data.Status.coordinateType);
+        void Store() => HumanExtension<CharaMods, CoordMods>.Coord = new ()
+        {
+            Face = FaceGroup.Store(),
+            Body = BodyGroup.Store(),
+            Hairs = HairGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
+            Clothes = ClothesGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
+            Accessories = AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store())
+        };
         void Update(IEnumerable<EditGroup> groups) => groups.Do(group => group.Update());
         void Update() =>
             Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
@@ -115,7 +108,6 @@ namespace SardineHead
     }
     static partial class Hooks
     {
-
         internal static event Action<HumanFace> OnFaceChange = delegate { };
         internal static event Action<HumanBody> OnBodyChange = delegate { };
         internal static event Action<HumanHair, int> OnHairChange = delegate { };
@@ -235,8 +227,6 @@ namespace SardineHead
             OnReloadingComplete(human);
     }
 
-    [BepInProcess(Process)]
-    [BepInPlugin(Guid, Name, Version)]
     public partial class Plugin : BasePlugin
     {
         public const string Process = "SamabakeScramble";

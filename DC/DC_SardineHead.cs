@@ -1,12 +1,9 @@
 using HarmonyLib;
-using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using Fishbone;
 
 namespace SardineHead
 {
-    [BepInProcess(Process)]
-    [BepInPlugin(Guid, Name, Version)]
     public partial class Plugin : BasePlugin
     {
         public const string Process = "DigitalCraft";
@@ -17,7 +14,7 @@ namespace SardineHead
             Extension.OnPreprocessChara += (_, archive) => Textures.Load(archive);
             Extension.OnPreprocessCoord += (_, archive) => Textures.Load(archive);
             Extension.OnSaveChara += (human, archive) =>
-                Textures.Save(HumanExtension<CharaMods, CoordMods>.Chara(human), archive);
+                Textures.Save(Extension.Chara<CharaMods, CoordMods>(human), archive);
             Extension.Register<CharaMods, CoordMods>();
             Extension.OnLoadChara += human => new ModApplicator(human);
             Extension.OnLoadCoord += human => new ModApplicator(human);
