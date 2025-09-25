@@ -63,15 +63,15 @@ namespace SardineHead
             ClothesGroups.Do(entry => entry.Value.Apply(mods.Clothes.GetValueOrDefault(entry.Key, new())));
             AccessoryGroups.Do(entry => entry.Value.Apply(mods.Accessories.GetValueOrDefault(entry.Key, new())));
         }
-        void Apply() => Apply(HumanExtension<CharaMods, CoordMods>.Coord);
-        void Store() => HumanExtension<CharaMods, CoordMods>.Coord = new ()
+        void Apply() => Apply(Extension.Coord<CharaMods, CoordMods>());
+        void Store() => Extension.Coord<CharaMods, CoordMods>(new CoordMods()
         {
             Face = FaceGroup.Store(),
             Body = BodyGroup.Store(),
             Hairs = HairGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
             Clothes = ClothesGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
             Accessories = AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store())
-        };
+        });
         void Update(IEnumerable<EditGroup> groups) => groups.Do(group => group.Update());
         void Update() =>
             Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
@@ -249,11 +249,11 @@ namespace SardineHead
             Extension.OnLoadActorCoord += Hooks.OnActorLoaded; 
 
             Extension.OnSaveChara += (archive) =>
-                Textures.Save(HumanExtension<CharaMods, CoordMods>.Chara, archive);
+                Textures.Save(Extension.Chara<CharaMods, CoordMods>(), archive);
             Extension.OnSaveCoord += (archive) =>
-                Textures.Save(HumanExtension<CharaMods, CoordMods>.Coord, archive);
+                Textures.Save(Extension.Coord<CharaMods, CoordMods>(), archive);
             Extension.OnSaveActor += (actor, archive) =>
-                Textures.Save(ActorExtension<CharaMods, CoordMods>.Chara(actor), archive);
+                Textures.Save(Extension.Chara<CharaMods, CoordMods>(actor), archive);
             EditWindow.Initialize();
         }
     }
