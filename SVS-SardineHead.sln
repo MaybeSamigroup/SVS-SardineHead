@@ -2,6 +2,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AC_SardineHead", "AC\AC_SardineHead.csproj", "{5E1A8FB3-ABF8-556E-9402-5E571AD247F0}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DC_SardineHead", "DC\DC_SardineHead.csproj", "{92ACE8B2-4E56-6768-C36A-E6C3EE96FF06}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SVS_SardineHead", "SVS\SVS_SardineHead.csproj", "{FD5A9B2B-BCC8-83E8-00EF-D30B0862D848}"
@@ -12,6 +14,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5E1A8FB3-ABF8-556E-9402-5E571AD247F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E1A8FB3-ABF8-556E-9402-5E571AD247F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E1A8FB3-ABF8-556E-9402-5E571AD247F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E1A8FB3-ABF8-556E-9402-5E571AD247F0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{92ACE8B2-4E56-6768-C36A-E6C3EE96FF06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{92ACE8B2-4E56-6768-C36A-E6C3EE96FF06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92ACE8B2-4E56-6768-C36A-E6C3EE96FF06}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -25,6 +31,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {03907C67-49F1-48C3-87BF-3DFFAC77D003}
+		SolutionGuid = {E5A03030-730C-46B9-8B18-07BC976B7581}
 	EndGlobalSection
 EndGlobal

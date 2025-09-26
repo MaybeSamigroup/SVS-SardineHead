@@ -1,17 +1,35 @@
 # SVS-SardineHead
 
-Runtime texture and material modifier tool for SamabakeScramble and modification loader for DigitalCraft.
+Runtime texture and material modifier tool for Aicomi and SamabakeScramble and modification loader for DigitalCraft.
 
-## Prerequisites
+## Prerequisites (Aicomi)
+
+- [BepInEx](https://github.com/BepInEx/BepInEx)
+  - [Bleeding Edge (BE) build](https://builds.bepinex.dev/projects/bepinex_be) #738 or later
+
+Confirmed working under Aicomi 1.0.0.
+Currently prerelease state.
+
+## Prerequisites (SamabakeScramble)
 
 - [SVS-HF_Patch](https://github.com/ManlyMarco/SVS-HF_Patch)
   - Message Center
   - BepInEx.ConfigurationManager
   - SVS_BepisPlugins
-- [Fishbone/CoastalSmell](https://github.com/MaybeSamigroup/SVS-Fishbone)
-  - 3.0.0/1.0.6 or later
 
 Confirmed working under SamabakeScramble 1.1.6 and DigitalCraft 2.0.0
+
+## Prerequisites (DigitalCraft Standalone)
+
+- [BepInEx](https://github.com/BepInEx/BepInE)
+  - [Bleeding Edge (BE) build](https://builds.bepinex.dev/projects/bepinex_be) #697 or later
+
+Confirmed working under DigitalCraft 2.0.0.
+
+## Prerequisites (Dependent BepInEx plugin)
+
+- [Fishbone/CoastalSmell](https://github.com/MaybeSamigroup/SVS-Fishbone)
+  - 3.0.2/1.0.7 or later
 
 ## Installation
 

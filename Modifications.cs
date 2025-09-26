@@ -1,8 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if AICOMI
+using R3;
+using R3.Triggers;
+#else
 using UniRx;
 using UniRx.Triggers;
+#endif
 using Cysharp.Threading.Tasks;
 using Il2CppSystem.Threading;
 using HarmonyLib;
@@ -149,18 +154,30 @@ namespace SardineHead
             OnApplicationComplete();
 
         void Prepare(CancellationTokenSource cts) =>
-            UniTask.DelayFrame(10, PlayerLoopTiming.Update, cts.Token)
+            UniTask.DelayFrame(10, Cysharp.Threading.Tasks.PlayerLoopTiming.Update, cts.Token)
                 .ContinueWith(F.Apply(Target.Apply, Mods) + NotifyComplete);
         void Apply() =>
             Current[Target].With(Clean)
                 .Add(Disposable.Create((Action)new CancellationTokenSource().With(Prepare).Cancel));
 
         void OnFaceReady(HumanFace item) =>
+#if AICOMI
+            (item._human == Target).Maybe(F.Apply(item.Apply, Mods));
+#else
             (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
+#endif
         void OnBodyReady(HumanBody item) =>
+#if AICOMI
+            (item._human == Target).Maybe(F.Apply(item.Apply, Mods));
+#else
             (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
+#endif
         void OnClothesReady(HumanCloth item, int index) =>
-            (item.human == Target).Maybe(F.Apply(item.clothess[index].Apply, Mods, index));
+#if AICOMI
+            (item._human == Target).Maybe(F.Apply(item.Clothess[index].Apply, Mods, index));
+#else
+            (item.human == Target).Maybe(F.Apply(item.Clothess[index].Apply, Mods, index));
+#endif
         void OnReloadingComplete(Human human) =>
             (human == Target).Maybe(Apply);
     }

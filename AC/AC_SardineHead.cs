@@ -3,12 +3,12 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
-using UniRx;
-using UniRx.Triggers;
+using R3;
+using R3.Triggers;
+using AC.User;
 using Character;
 using CharacterCreation;
 using HarmonyLib;
-using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using Fishbone;
@@ -52,7 +52,7 @@ namespace SardineHead
         void OnHairChange(HumanHair item, int index) =>
             Initialize(item.Wrap(index), GroupAt($"Hair:{Enum.GetName(typeof(ChaFileDefine.HairKind), index)}", HairGroups, index));
         void OnClothesChange(HumanCloth item, int index) =>
-            Initialize(item.clothess[index].WrapCtc().Concat(item.Wrap(index)).ToDictionary(),
+            Initialize(item.Clothess[index].WrapCtc().Concat(item.Wrap(index)).ToDictionary(),
                 GroupAt($"Clothes:{Enum.GetName(typeof(ChaFileDefine.ClothesKind), index)}", ClothesGroups, index));
         void OnAccessoryChange(HumanAccessory item, int index) =>
             Initialize(item.Wrap(index), GroupAt($"Accessories{index}", AccessoryGroups, index));
@@ -129,9 +129,9 @@ namespace SardineHead
 
         [HarmonyPostfix]
         [HarmonyWrapSafe]
-        [HarmonyPatch(typeof(HumanHair), nameof(HumanHair.ChangeHair), typeof(int), typeof(int), typeof(bool))]
-        static void ChangeHairPostfix(HumanHair __instance, int kind) =>
-            OnHairChange(__instance, kind);
+        [HarmonyPatch(typeof(HumanHair), nameof(HumanHair.ChangeHair), typeof(ChaFileDefine.HairKind), typeof(int), typeof(bool))]
+        static void ChangeHairPostfix(HumanHair __instance, ChaFileDefine.HairKind kind) =>
+            OnHairChange(__instance, (int)kind);
 
         [HarmonyPostfix]
         [HarmonyWrapSafe]
@@ -196,7 +196,7 @@ namespace SardineHead
         [HarmonyPrefix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesTop),
-            [typeof(HumanCloth.TopResultData), typeof(int), typeof(int), typeof(int), typeof(int), typeof(bool)],
+            [typeof(bool), typeof(int), typeof(int), typeof(int), typeof(int), typeof(bool)],
             [ArgumentType.Out, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal])]
         static void ChangeClothesTopPrefix(HumanCloth __instance, ref bool __state) =>
             __state = __instance.notBot;
@@ -204,7 +204,7 @@ namespace SardineHead
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.ChangeClothesTop),
-            [typeof(HumanCloth.TopResultData), typeof(int), typeof(int), typeof(int), typeof(int), typeof(bool)],
+            [typeof(bool), typeof(int), typeof(int), typeof(int), typeof(int), typeof(bool)],
             [ArgumentType.Out, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal])]
         static void ChangeClothesTopPostfix(HumanCloth __instance, bool __state) =>
             ((__state == __instance.notBot) ? TopOnly : TopAndBot).Do(kind => OnClothesChange(__instance, kind));
@@ -212,37 +212,31 @@ namespace SardineHead
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanAccessory), nameof(HumanAccessory.ChangeAccessory),
-            typeof(int), typeof(int), typeof(int), typeof(ChaAccessoryDefine.AccessoryParentKey), typeof(bool))]
+            typeof(int), typeof(ChaListDefine.CategoryNo), typeof(int), typeof(ChaAccessoryDefine.AccessoryParentKey), typeof(bool))]
         static void ChangeAccessoryPostfix(HumanAccessory __instance, int slotNo) =>
             OnAccessoryChange(__instance, slotNo);
 
         [HarmonyPostfix, HarmonyWrapSafe]
-        [HarmonyPatch(typeof(SaveData.CharaData), nameof(SaveData.CharaData.SetRoot))]
-        static void SaveDataCharaDataSetRootPostfix(SaveData.CharaData __instance) =>
-            (__instance.chaCtrl != null).Maybe(F.Apply(OnReloadingComplete, __instance.chaCtrl));
+        [HarmonyPatch(typeof(AC.CharaBase), nameof(AC.CharaBase.SetRoot))]
+        static void SaveDataCharaDataSetRootPostfix(AC.CharaBase __instance) =>
+            (__instance._chara != null).Maybe(F.Apply(OnReloadingComplete, __instance._chara));
 
         internal static void OnCustomLoaded() =>
             OnReloadingComplete(HumanCustom.Instance.Human);
 
-        internal static void OnActorLoaded(SaveData.Actor _, Human human) =>
+        internal static void OnActorLoaded(ActorData _, Human human) =>
             OnReloadingComplete(human);
     }
 
-    [BepInDependency(VarietyOfScales.Plugin.Guid, BepInDependency.DependencyFlags.SoftDependency)]
     public partial class Plugin : BasePlugin
     {
-        public const string Process = "SamabakeScramble";
+        public const string Process = "Aicomi";
         public override void Load()
         {
             (Instance, Patch) = (this, Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks"));
 
             Extension.OnPreprocessChara += (_, archive) => Textures.Load(archive);
             Extension.OnPreprocessCoord += (_, archive) => Textures.Load(archive);
-
-            Extension.OnPreprocessChara += Extension<CharaMods, CoordMods>
-                .Translate<LegacyCharaMods>(Path.Combine(Guid, "modifications.json"), mods => mods);
-            Extension.OnPreprocessCoord += Extension<CharaMods, CoordMods>
-                .Translate<LegacyCoordMods>(Path.Combine(Guid, "modifications.json"), mods => mods);
 
             Extension.Register<CharaMods, CoordMods>();
             Extension.OnLoadChara += human => new ModApplicator(human);

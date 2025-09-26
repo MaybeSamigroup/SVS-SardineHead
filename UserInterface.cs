@@ -7,13 +7,19 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering;
 using TMPro;
-using UniRx;
 using Cysharp.Threading.Tasks;
+#if AICOMI
+using R3;
+using ILLGAMES.Unity.UI.ColorPicker;
+using ILLGAMES.Extensions;
+#else
+using UniRx;
 using ILLGames.Unity.UI.ColorPicker;
+using ILLGames.Extensions;
+#endif
 using ImportDialog = System.Windows.Forms.OpenFileDialog;
 using ExportDialog = System.Windows.Forms.SaveFileDialog;
 using CoastalSmell;
-using ILLGames.Extensions;
 
 namespace SardineHead
 {
@@ -29,7 +35,7 @@ namespace SardineHead
                 UGUI.ScrollView(528, 812, "Edits", go).With(ScrollView).transform);
         static Action<GameObject> ScrollView = go => go
             .With(UGUI.Cmp(UGUI.Fitter()))
-            .With(UGUI.Cmp(UGUI.LayoutGroup<VerticalLayoutGroup>(padding: new(6, 6, 6, 6))));
+            .With(UGUI.Cmp(UGUI.LayoutGroup<VerticalLayoutGroup>(padding: new() { left = 6, right = 6, top = 6, bottom =6 })));
         internal static Action<string, GameObject> Section =
             (name, parent) => UGUI.Section(300, 24, name, new(0.3f, 0.3f, 0.3f, 0.8f), parent);
         internal static Func<string, GameObject, GameObject> Toggle =

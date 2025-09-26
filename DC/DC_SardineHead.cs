@@ -1,9 +1,11 @@
 using HarmonyLib;
+using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using Fishbone;
 
 namespace SardineHead
 {
+    [BepInDependency(VarietyOfScales.Plugin.Guid, BepInDependency.DependencyFlags.SoftDependency)]
     public partial class Plugin : BasePlugin
     {
         public const string Process = "DigitalCraft";

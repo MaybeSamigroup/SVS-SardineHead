@@ -4,7 +4,11 @@ using System.IO.Compression;
 using System.Linq;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+#if AICOMI
+using R3;
+#else
 using UniRx;
+#endif
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -136,9 +140,17 @@ namespace SardineHead
         static string Identify(this Transform tf, int depth) =>
             depth == 0 ? tf.name : tf.parent.Identify(depth - 1);
         internal static MaterialWrappers WrapCtc(this HumanFace face) =>
+#if AICOMI
+            new() { ["/ct_face"] = new MaterialWrapper(face._customTexCtrlFace) };
+#else
             new() { ["/ct_face"] = new MaterialWrapper(face.customTexCtrlFace) };
+#endif
         internal static MaterialWrappers WrapCtc(this HumanBody body) =>
+#if AICOMI
+            new() { ["/ct_body"] = new MaterialWrapper(body._customTexCtrlBody) };
+#else
             new() { ["/ct_body"] = new MaterialWrapper(body.customTexCtrlBody) };
+#endif
         internal static MaterialWrappers WrapCtc(this HumanCloth.Clothes clothes) =>
             Enumerable.Range(0, clothes?.ctCreateClothes?.Count ?? 0)
                 .Where(idx => clothes?.cusClothesCmp != null && clothes?.ctCreateClothes[idx]?._matCreate != null)
@@ -147,7 +159,11 @@ namespace SardineHead
         internal static MaterialWrappers Wrap(this HumanFace item) =>
             WrapRenderers(RenderersOfGo(item?.objHead)) ?? new();
         internal static MaterialWrappers Wrap(this HumanBody item) =>
+#if AICOMI
+            WrapRenderers(RenderersOfGo(item?._objBody)) ?? new();
+#else
             WrapRenderers(RenderersOfGo(item?.objBody)) ?? new();
+#endif
         static MaterialWrappers Wrap(HumanHair.Hair item) =>
             WrapRenderers(RenderersOfGo(item?.cusHairCmp?.gameObject)) ?? new();
         static MaterialWrappers Wrap(HumanCloth.Clothes item) =>
@@ -155,17 +171,17 @@ namespace SardineHead
         static MaterialWrappers Wrap(HumanAccessory.Accessory item) =>
             WrapRenderers(RenderersOfGo(item?.cusAcsCmp?.gameObject)) ?? new();
         internal static MaterialWrappers Wrap(this HumanHair item, int index) =>
-            index < item.hairs.Count ? Wrap(item.hairs[index]) : new();
+            index < item.Hairs.Count ? Wrap(item.Hairs[index]) : new();
         internal static MaterialWrappers Wrap(this HumanCloth item, int index) =>
-            index < item.clothess.Count && index switch
+            index < item.Clothess.Count && index switch
             {
                 1 => !item.notBot,
                 2 => !item.notBra,
                 3 => !item.notShorts,
                 _ => true
-            } ? Wrap(item.clothess[index]) : new();
+            } ? Wrap(item.Clothess[index]) : new();
         internal static MaterialWrappers Wrap(this HumanAccessory item, int index) =>
-            index < item.accessories.Count ? Wrap(item.accessories[index]) : new();
+            index < item.Accessories.Count ? Wrap(item.Accessories[index]) : new();
         static void Apply(MaterialWrappers wrappers, Mods mods) =>
             wrappers.Do(entry => entry.Value.Apply(mods.TryGetValue(entry.Key, out var value) ? value : new()));
         static void Apply(MaterialWrappers renderers, MaterialWrappers ctc, Mods mods) =>
@@ -183,11 +199,11 @@ namespace SardineHead
             mods.Clothes.TryGetValue(index, out var value)
                 .Maybe(F.Apply(Apply, Wrap(item), item.WrapCtc(), value));
         static void Apply(HumanHair item, CoordMods mods) =>
-            item.hairs.ForEachIndex(mods.Apply);
+            item.Hairs.ForEachIndex(mods.Apply);
         static void Apply(HumanCloth item, CoordMods mods) =>
-            item.clothess.ForEachIndex(mods.Apply);
+            item.Clothess.ForEachIndex(mods.Apply);
         static void Apply(HumanAccessory item, CoordMods mods) =>
-            item.accessories.ForEachIndex(mods.Apply);
+            item.Accessories.ForEachIndex(mods.Apply);
         static void Apply(this CoordMods mods, HumanHair.Hair item, int index) =>
             mods.Hairs.TryGetValue(index, out var value).Maybe(F.Apply(Apply, Wrap(item), value));
         static void Apply(this CoordMods mods, HumanCloth.Clothes item, int index) =>
@@ -260,7 +276,6 @@ namespace SardineHead
 
     [BepInProcess(Process)]
     [BepInDependency(Fishbone.Plugin.Guid)]
-    [BepInDependency(VarietyOfScales.Plugin.Guid, BepInDependency.DependencyFlags.SoftDependency)]
     [BepInPlugin(Guid, Name, Version)]
     public partial class Plugin : BasePlugin
     {
