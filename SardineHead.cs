@@ -4,7 +4,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-#if AICOMI
+#if Aicomi
 using R3;
 #else
 using UniRx;
@@ -140,13 +140,13 @@ namespace SardineHead
         static string Identify(this Transform tf, int depth) =>
             depth == 0 ? tf.name : tf.parent.Identify(depth - 1);
         internal static MaterialWrappers WrapCtc(this HumanFace face) =>
-#if AICOMI
+#if Aicomi
             new() { ["/ct_face"] = new MaterialWrapper(face._customTexCtrlFace) };
 #else
             new() { ["/ct_face"] = new MaterialWrapper(face.customTexCtrlFace) };
 #endif
         internal static MaterialWrappers WrapCtc(this HumanBody body) =>
-#if AICOMI
+#if Aicomi
             new() { ["/ct_body"] = new MaterialWrapper(body._customTexCtrlBody) };
 #else
             new() { ["/ct_body"] = new MaterialWrapper(body.customTexCtrlBody) };
@@ -159,7 +159,7 @@ namespace SardineHead
         internal static MaterialWrappers Wrap(this HumanFace item) =>
             WrapRenderers(RenderersOfGo(item?.objHead)) ?? new();
         internal static MaterialWrappers Wrap(this HumanBody item) =>
-#if AICOMI
+#if Aicomi
             WrapRenderers(RenderersOfGo(item?._objBody)) ?? new();
 #else
             WrapRenderers(RenderersOfGo(item?.objBody)) ?? new();
@@ -281,7 +281,7 @@ namespace SardineHead
     {
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "2.0.1";
+        public const string Version = "2.1.1";
         internal static Plugin Instance;
         private Harmony Patch;
         public override bool Unload() =>

@@ -12,7 +12,6 @@ namespace SardineHead
         public override void Load()
         {
             (Instance, Patch) = (this, Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks"));
-            Extension.Register<CharaMods, CoordMods>();
             Extension.OnPreprocessChara += (_, archive) => Textures.Load(archive);
             Extension.OnPreprocessCoord += (_, archive) => Textures.Load(archive);
             Extension.OnSaveChara += (human, archive) =>

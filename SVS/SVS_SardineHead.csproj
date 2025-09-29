@@ -7,11 +7,13 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GameName>SamabakeScramble</GameName>
         <GamePath>$([MSBuild]::GetRegistryValue('HKEY_CURRENT_USER\Software\ILLGAMES\$(GameName)','INSTALLDIR'))</GamePath>
+		<DefineConstants>$(GameName)</DefineConstants>
     </PropertyGroup>
 	<ItemGroup>
 		<Compile Include="..\SardineHead.cs"/>
 		<Compile Include="..\Modifications.cs"/>
 		<Compile Include="..\UserInterface.cs"/>
+		<Compile Include="..\Custom.cs"/>
 		<Reference Include="0Harmony">
 			<HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath>
 			<Private>False</Private>
@@ -103,10 +105,12 @@
 	<Target Name="Release" AfterTargets="Build">
 		<ItemGroup>
 			<NetDll Include="..\Resource\*.*"/>
+			<ShaderJson Include="..\Resource\$(GameName)\shaders.json"/>
 		</ItemGroup>
 		<Copy SourceFiles="@(NetDll)" DestinationFolder="..\Release\$(GameName)\dotnet"/>
 		<MakeDir Directories="..\Release\$(GameName)\UserData\plugins\SardineHead\export"/>
 		<MakeDir Directories="..\Release\$(GameName)\UserData\plugins\SardineHead\import"/>
+		<Copy SourceFiles="@(ShaderJson)" DestinationFolder="..\Release\$(GameName)\UserData\plugins\SardineHead"/>
 		<Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="..\Release\$(GameName)\BepinEx\plugins"/>
 		<ZipDirectory SourceDirectory="..\Release\$(GameName)" Overwrite="true" DestinationFile="..\$(AssemblyName).zip"/>
 	</Target>

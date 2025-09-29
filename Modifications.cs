@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if AICOMI
+#if Aicomi
 using R3;
 using R3.Triggers;
 #else
@@ -67,8 +67,8 @@ namespace SardineHead
         };
         public CharaMods Merge(int coordinateType, CoordMods mods) => new()
         {
-            Face = Face,
-            Body = Body,
+            Face = mods.Face,
+            Body = mods.Body,
             Hairs = Hairs.Merge(coordinateType, mods.Hairs),
             Clothes = Clothes.Merge(coordinateType, mods.Clothes),
             Accessories = Accessories.Merge(coordinateType, mods.Accessories),
@@ -161,19 +161,19 @@ namespace SardineHead
                 .Add(Disposable.Create((Action)new CancellationTokenSource().With(Prepare).Cancel));
 
         void OnFaceReady(HumanFace item) =>
-#if AICOMI
+#if Aicomi
             (item._human == Target).Maybe(F.Apply(item.Apply, Mods));
 #else
             (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
 #endif
         void OnBodyReady(HumanBody item) =>
-#if AICOMI
+#if Aicomi
             (item._human == Target).Maybe(F.Apply(item.Apply, Mods));
 #else
             (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
 #endif
         void OnClothesReady(HumanCloth item, int index) =>
-#if AICOMI
+#if Aicomi
             (item._human == Target).Maybe(F.Apply(item.Clothess[index].Apply, Mods, index));
 #else
             (item.human == Target).Maybe(F.Apply(item.Clothess[index].Apply, Mods, index));

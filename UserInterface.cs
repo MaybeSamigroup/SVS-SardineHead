@@ -8,7 +8,7 @@ using UnityEngine.UI;
 using UnityEngine.Rendering;
 using TMPro;
 using Cysharp.Threading.Tasks;
-#if AICOMI
+#if Aicomi
 using R3;
 using ILLGAMES.Unity.UI.ColorPicker;
 using ILLGAMES.Extensions;
@@ -23,8 +23,14 @@ using CoastalSmell;
 
 namespace SardineHead
 {
-    internal static class UI
+    public class ShaderDefinitions
     {
+        public List<string> BuiltIn { get; set; } = new ();
+    }
+    internal static partial class UI
+    {
+        internal static string[] ShaderNames = Json<ShaderDefinitions>.Load(Plugin.Instance.Log.LogError,
+                File.OpenRead(Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Name, "shaders.json"))).BuiltIn.ToArray();
         internal static GameObject Window(WindowHandle handle) =>
             UGUI.Window(856, 824, Plugin.Name, handle)
                 .With(UGUI.Cmp(UGUI.ToggleGroup(allowSwitchOff: false)))
@@ -55,69 +61,6 @@ namespace SardineHead
             (name, parent) => UGUI.Button(80, 24, name, parent);
         internal static Action<string, GameObject> Choice =
             (name, parent) => UGUI.Choice(220, 24, name, parent);
-        internal static readonly string[] ShaderNames = {
-            "Hidden/InternalErrorShader",
-            "Custom/monoTone",
-            "ItohikiShader_URP",
-            "Legacy Shaders/VertexLit",
-            "Legacy Shaders/Particles/Alpha Blended",
-            "Legacy Shaders/Particles/Alpha Blended Premultiply",
-            "ProBuilder/UnlitVertexColor",
-            "ProBuilder/Standard Vertex Color",
-            "LIF/lif_create_main_cloth",
-            "LIF/lif_create_main_skin_body",
-            "LIF/lif_create_main_skin_head",
-            "LIF/lif_main_acs",
-            "LIF/lif_main_acs_alpha",
-            "LIF/lif_main_acs_low",
-            "LIF/lif_main_cloth",
-            "LIF/lif_main_cloth_low",
-            "LIF/lif_main_cloth_alpha",
-            "LIF/lif_main_cloth_alpha_low",
-            "LIF/lif_main_cloth_socks",
-            "LIF/lif_main_cloth_socks_alpha",
-            "LIF/lif_main_eye",
-            "LIF/lif_main_eye_low",
-            "LIF/lif_main_eyebrow",
-            "LIF/lif_main_eyelash_up",
-            "LIF/lif_main_eyelid",
-            "LIF/lif_main_hair",
-            "LIF/lif_main_hair_low",
-            "LIF/lif_main_hair_outline",
-            "LIF/lif_main_nail",
-            "LIF/lif_main_nail_low",
-            "LIF/lif_main_skin_body",
-            "LIF/lif_main_skin_body_low",
-            "LIF/lif_main_skin_head",
-            "LIF/lif_main_skin_head_low",
-            "LIF/lif_namida",
-            "LIF/lif_silhouette",
-            "LIF/lif_sub_mnpb_urp",
-            "LIF/lif_unlit2d",
-            "LIF/MoveAxis",
-            "LIF/MoveAxis_Alpha",
-            "LIF/sub_texture_animation",
-            "lif_shadow_map",
-            "Lux URP/FX/Box Volume",
-            "Lux URP/FX/Lightbeam",
-            "Lux URP/Water",
-            "Obi/DistanceFieldSlice",
-            "Obi/URP/Fluid/FluidShading",
-            "Obi/URP/Particles",
-            "Obi/URP/Simple Particles",
-            "Obi/Fluid/Colors/FluidColorsBlend",
-            "Obi/Fluid/FluidShading",
-            "Obi/Simple Particles",
-            "Universal Render Pipeline/Lit",
-            "Universal Render Pipeline/Nature/SpeedTree8",
-            "Universal Render Pipeline/Particles/Unlit",
-            "Unlit/Color",
-            "Unlit/Texture",
-            "Unlit/Transparent",
-            "Standard (Vertex Colors)",
-            "Standard (Specular setup)",
-            "Standard",
-        };
         internal static ChoiceList ShaderChoices;
         internal static void PrepareChoicesList() => ShaderChoices = new(300, 24, "Shaders", ShaderNames);
     }
