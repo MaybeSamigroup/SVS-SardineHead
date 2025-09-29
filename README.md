@@ -9,8 +9,7 @@ Runtime texture and material modifier tool for Aicomi and SamabakeScramble and m
 - [BepInEx.ConfigurationManager](https://github.com/BepInEx/BepInEx.ConfigurationManager)
   - IL2CPP version 18.4.1 or later
 
-Confirmed working under Aicomi 1.0.0.
-Currently prerelease state.
+Confirmed working under Aicomi 1.0.1.
 
 ## Prerequisites (SamabakeScramble)
 
