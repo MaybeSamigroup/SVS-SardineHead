@@ -1,8 +1,28 @@
 {
     "BuiltIn": [
+        "AC/acs",
+        "AC/acs_alpha",
+        "AC/cloth",
+        "AC/cloth_alpha",
+        "AC/eye",
+        "AC/eyebrow",
+        "AC/eyelash_up",
+        "AC/eyelid",
+        "AC/hair",
+        "AC/hair_outline",
+        "AC/nail",
+        "AC/skin_body",
+        "AC/skin_head",
+        "AC/sub/mnpb",
+        "AC/sub/namida",
+        "AC/sub/shadowcast",
+        "AC/sub/silhouette",
+        "AC/sub/unlit2d",
+        "AC/sub/unlit not fog",
         "LIF/lif_create_main_cloth",
         "LIF/lif_create_main_skin_body",
         "LIF/lif_create_main_skin_head",
+        "Universal Render Pipeline/Lit",
         "LIF/lif_main_acs",
         "LIF/lif_main_acs_alpha",
         "LIF/lif_main_acs_low",
@@ -32,6 +52,8 @@
         "LIF/lif_unlit2d",
         "LIF/MoveAxis",
         "LIF/MoveAxis_Alpha",
-        "LIF/sub_texture_animation"
+        "LIF/sub_texture_animation",
+        "Universal Render Pipeline/Lit"
     ]
 }
+

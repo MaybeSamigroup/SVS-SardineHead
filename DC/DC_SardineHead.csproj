@@ -99,8 +99,8 @@
 	</Target>
 	<Target Name="Release" AfterTargets="Build">
 		<ItemGroup>
-			<NetDll Include="..\Resource\*.*"/>
-			<ShaderJson Include="..\Resource\$(GameName)\shaders.json"/>
+			<ShaderJson Include="..\Resource\shaders.json"/>
+			<NetDll Include="..\Resource\*.*" Exclude="shader.json"/>
 		</ItemGroup>
 		<Copy SourceFiles="@(NetDll)" DestinationFolder="..\Release\$(GameName)\dotnet"/>
 		<MakeDir Directories="..\Release\$(GameName)\UserData\plugins\SardineHead\export"/>

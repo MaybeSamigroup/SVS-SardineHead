@@ -29,8 +29,10 @@ namespace SardineHead
     }
     internal static partial class UI
     {
-        internal static string[] ShaderNames = Json<ShaderDefinitions>.Load(Plugin.Instance.Log.LogError,
-                File.OpenRead(Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Name, "shaders.json"))).BuiltIn.ToArray();
+        internal static string[] ShaderNames = Json<ShaderDefinitions>
+            .Load(Plugin.Instance.Log.LogError, File.OpenRead(Path.Combine(Paths.GameRootPath, "UserData", "plugins", Plugin.Name, "shaders.json")))
+            .BuiltIn.Where(name => Shader.Find(name) != null).ToArray();
+            
         internal static GameObject Window(WindowHandle handle) =>
             UGUI.Window(856, 824, Plugin.Name, handle)
                 .With(UGUI.Cmp(UGUI.ToggleGroup(allowSwitchOff: false)))
