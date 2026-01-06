@@ -3,12 +3,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Collections.Generic;
+using System.Reactive.Disposables;
 using System.Security.Cryptography;
-#if Aicomi
-using R3;
-#else
-using UniRx;
-#endif
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -96,7 +92,7 @@ namespace SardineHead
             ApplyShader + ApplyInt + ApplyFloat + ApplyRange +
             ApplyColor + ApplyVector + ApplyTexture + ApplyRenderer;
         Action<Modifications> ApplyShader => mods =>
-            SetShader(mods.Shader);
+            (Renderer != null).Maybe(F.Apply(SetShader, mods.Shader));
         Action<Modifications> ApplyInt => mods =>
             mods.IntValues.ForEach(entry => SetInt(entry.Key, entry.Value));
         Action<Modifications> ApplyFloat => mods =>
@@ -191,11 +187,11 @@ namespace SardineHead
             F.Apply(Apply, item.hair, mods) +
             F.Apply(Apply, item.cloth, mods)
         ).Invoke();
-        internal static void Apply(this HumanFace item, CoordMods mods) =>
+        internal static void Apply(this CoordMods mods, HumanFace item) =>
             Apply(item.Wrap(), item.WrapCtc(), mods.Face);
-        internal static void Apply(this HumanBody item, CoordMods mods) =>
+        internal static void Apply(this CoordMods mods, HumanBody item) =>
             Apply(item.Wrap(), item.WrapCtc(), mods.Body);
-        internal static void Apply(this HumanCloth.Clothes item, CoordMods mods, int index) =>
+        internal static void Apply(this HumanCloth.Clothes item, int index, CoordMods mods) =>
             mods.Clothes.TryGetValue(index, out var value)
                 .Maybe(F.Apply(Apply, Wrap(item), item.WrapCtc(), value));
         static void Apply(HumanHair item, CoordMods mods) =>
@@ -281,10 +277,14 @@ namespace SardineHead
     {
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "2.1.2";
+        public const string Version = "2.2.0";
         internal static Plugin Instance;
-        private Harmony Patch;
+        CompositeDisposable Subscriptions;
+        IDisposable Initialize() =>
+            Disposable.Create(Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks").UnpatchSelf);
+        public override void Load() =>
+            (Instance, Subscriptions) = (this, [Initialize(), .. Hooks.Initialize(this)]);
         public override bool Unload() =>
-            true.With(Patch.UnpatchSelf) && base.Unload();
+            true.With(Subscriptions.Dispose) && base.Unload();
     }
 }

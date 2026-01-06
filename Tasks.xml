@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <TargetFramework>net6</TargetFramework>
+        <PluginName>SardineHead</PluginName>
+        <LangVersion>latest</LangVersion>
+        <GamePath>$([MSBuild]::GetRegistryValue('HKEY_CURRENT_USER\Software\ILLGAMES\$(GameName)','INSTALLDIR'))</GamePath>
+        <GamePrefix>$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))</GamePrefix>
+        <AssemblyName>$(GamePrefix)_$(PluginName)</AssemblyName>
+        <DefineConstants>$(GameName)</DefineConstants>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="System.Reactive" Version="6.1.0"/>
+        <Reference Include="System.Windows.Forms">
+            <HintPath>../Resource/System.Windows.Forms.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <ProjectReference Include="../../SVS-Fishbone/CoastalSmell/$(GamePrefix)/$(GamePrefix)_CoastalSmell.csproj">
+            <Private>False</Private>
+            <ExcludeAssets>all</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="../../SVS-Fishbone/Fishbone/$(GamePrefix)/$(GamePrefix)_Fishbone.csproj">
+            <Private>False</Private>
+            <ExcludeAssets>all</ExcludeAssets>
+        </ProjectReference>
+        <ProjectReference Include="../../SVS-VarietyOfScales/$(GamePrefix)/$(GamePrefix)_VarietyOfScales.csproj" Condition="'$(GameName)' != 'Aicomi'">
+            <Private>False</Private>
+            <ExcludeAssets>all</ExcludeAssets>
+        </ProjectReference>
+        <Compile Include="../$(PluginName).cs"/>
+        <Compile Include="../Modifications.cs"/>
+        <Compile Include="../UserInterface.cs"/>
+        <ShaderJson Include="../Resource/shaders.json"/>
+        <NetDll Include="../Resource/*.*" Exclude="shader.json"/>
+    </ItemGroup>
+    <Target Name="Clone" BeforeTargets="Build" Condition="!Exists('../../SVS-Fishbone')">
+        <Exec WorkingDirectory="../.." Command="git clone https://github.com/MaybeSamigroup/SVS-Fishbone.git SVS-Fishbone"/>
+    </Target>
+    <Target Name="CloneVoS" BeforeTargets="Build" Condition="!Exists('../../SVS-VarietyOfScales')">
+        <Exec WorkingDirectory="../.." Command="git clone https://github.com/MaybeSamigroup/SVS-VarietyOfScales.git SVS-VarietyOfScales"/>
+    </Target>
+    <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+        <Copy SourceFiles="@(NetDll)" DestinationFolder="$(GamePath)/dotnet"/>
+        <Copy SourceFiles="$(OutputPath)/$(AssemblyName).dll" DestinationFolder="$(GamePath)/BepInEx/plugins/" />
+        <Copy SourceFiles="@(ShaderJson)" DestinationFolder="$(GamePath)/UserData/plugins/$(PluginName)"/>
+        <MakeDir Directories="$(GamePath)/UserData/plugins/$(PluginName)/export"/>
+        <MakeDir Directories="$(GamePath)/UserData/plugins/$(PluginName)/import"/>
+    </Target>
+    <Target Name="Release" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+        <Copy SourceFiles="@(NetDll)" DestinationFolder="../Release/$(GameName)/dotnet"/>
+        <Copy SourceFiles="@(ShaderJson)" DestinationFolder="../Release/$(GameName)/UserData/plugins/$(PluginName)"/>
+        <Copy SourceFiles="$(OutputPath)/$(AssemblyName).dll" DestinationFolder="../Release/$(GameName)/BepinEx/plugins"/>
+        <MakeDir Directories="../Release/$(GameName)/UserData/plugins/$(PluginName)/export"/>
+        <MakeDir Directories="../Release/$(GameName)/UserData/plugins/$(PluginName)/import"/>
+        <ZipDirectory SourceDirectory="../Release/$(GameName)" Overwrite="true" DestinationFile="../$(AssemblyName).zip"/>
+    </Target>
+    <Target Name="CleanRelease" AfterTargets="Clean">
+        <RemoveDir Directories="../Release/$(GameName)"/>
+        <Delete Files="../$(AssemblyName).zip"/>
+    </Target>
+</Project>

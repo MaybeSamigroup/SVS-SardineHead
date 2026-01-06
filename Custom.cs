@@ -1,18 +1,12 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Reactive.Linq;
+using System.Reactive.Disposables;
 using UnityEngine;
-#if Aicomi
-using R3;
-using R3.Triggers;
-#else
-using UniRx;
-using UniRx.Triggers;
-#endif
 using Character;
 using CharacterCreation;
 using HarmonyLib;
-using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using Fishbone;
 using CoastalSmell;
@@ -21,6 +15,7 @@ namespace SardineHead
 {
     internal class EditWindow
     {
+        Window Window;
         Transform ListPanel;
         Transform EditPanel;
         EditGroup FaceGroup;
@@ -28,26 +23,38 @@ namespace SardineHead
         Dictionary<int, EditGroup> HairGroups = new();
         Dictionary<int, EditGroup> ClothesGroups = new();
         Dictionary<int, EditGroup> AccessoryGroups = new();
-        EditWindow(Tuple<Transform, Transform> panels) =>
-            (ListPanel, EditPanel) = panels;
-        EditWindow(GameObject window) : this(UI.Panels(window)) => window
-            .With(UI.PrepareChoicesList)
-            .With(ShaderEdit.PrepareArchetype)
-            .With(RenderingEdit.PrepareArchetype)
-            .With(IntEdit.PrepareArchetype)
-            .With(FloatEdit.PrepareArchetype)
-            .With(RangeEdit.PrepareArchetype)
-            .With(ColorEdit.PrepareArchetype)
-            .With(VectorEdit.PrepareArchetype)
-            .With(TextureEdit.PrepareArchetype)
-            .GetComponentInParent<ObservableUpdateTrigger>()
-                .UpdateAsObservable().Subscribe(F.Ignoring<Unit>(Update));
-        EditWindow() : this(UI.Window(Handle)) =>
-            (FaceGroup, BodyGroup) = (new EditGroup("Face", ListPanel), new EditGroup("Body", ListPanel));
+        CompositeDisposable Subscriptions;
+        EditWindow(GameObject go) => go
+            .With("Menus".AsChild(
+                UGUI.ColorPanel +
+                UGUI.ScrollV(305, 800,
+                "Contents".AsChild(
+                    UGUI.LayoutV(padding: UGUI.Offset(6, 6)) +
+                    UGUI.Fitter() + new UIAction(go => ListPanel = go.transform)))))
+             .With("Edits".AsChild(
+                UGUI.ColorPanel +
+                UGUI.ScrollV(505, 800,
+                "Contents".AsChild(
+                    UGUI.LayoutV(padding: UGUI.Offset(6, 6)) +
+                    UGUI.Fitter() + new UIAction(go => EditPanel = go.transform)))));
+
+        EditWindow(Window window) : this(window.Content) =>
+            (Window, FaceGroup, BodyGroup, Subscriptions) = (window, new EditGroup("Face", ListPanel), new EditGroup("Body", ListPanel), [
+                HumanCustomExtension.OnBodyChange.Subscribe(OnBodyChange),
+                HumanCustomExtension.OnFaceChange.Subscribe(OnFaceChange),
+                HumanCustomExtension.OnHairChange.Subscribe(tuple => OnHairChange(tuple.Item1, tuple.Item2)),
+                HumanCustomExtension.OnClothesChange.Subscribe(tuple => OnClothesChange(tuple.Item1, tuple.Item2)),
+                HumanCustomExtension.OnAccessoryChange.Subscribe(tuple => OnAccessoryChange(tuple.Item1, tuple.Item2)),
+                Extension.OnPrepareSaveChara.Subscribe(_ => Store()),
+                Extension.OnPrepareSaveCoord.Subscribe(_ => Store()),
+                ModApplicator.OnApplicationComplete.Subscribe(_ => Apply()),
+                window.OnUpdate.Subscribe(_ => Update())
+            ]);
+
         EditGroup GroupAt(string name, Dictionary<int, EditGroup> groups, int index) =>
             groups.TryGetValue(index, out var group) ? group : groups[index] = new EditGroup(name, ListPanel);
         void Initialize(Dictionary<string, MaterialWrapper> wrappers, EditGroup group) =>
-            group.Initialize(wrappers, Handle, EditPanel);
+            group.Initialize(wrappers, Window, EditPanel);
         void OnBodyChange(HumanBody item) =>
             Initialize(item.WrapCtc().Concat(item.Wrap()).ToDictionary(), BodyGroup);
         void OnFaceChange(HumanFace item) =>
@@ -67,87 +74,46 @@ namespace SardineHead
             ClothesGroups.Do(entry => entry.Value.Apply(mods.Clothes.GetValueOrDefault(entry.Key, new())));
             AccessoryGroups.Do(entry => entry.Value.Apply(mods.Accessories.GetValueOrDefault(entry.Key, new())));
         }
-        void Apply() => Apply(Extension.Coord<CharaMods, CoordMods>());
-        void Store() => Extension.Coord<CharaMods, CoordMods>(new CoordMods()
+        void Apply() => Apply(Extension<CharaMods, CoordMods>.Humans.NowCoordinate[HumanCustom.Instance.Human]);
+        void Store() => Extension<CharaMods, CoordMods>.Humans.NowCoordinate[HumanCustom.Instance.Human] = new CoordMods()
         {
             Face = FaceGroup.Store(),
             Body = BodyGroup.Store(),
             Hairs = HairGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
             Clothes = ClothesGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store()),
             Accessories = AccessoryGroups.ToDictionary(entry => entry.Key, entry => entry.Value.Store())
-        });
+        };
         void Update(IEnumerable<EditGroup> groups) => groups.Do(group => group.Update());
         void Update() =>
             Update([FaceGroup, BodyGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values]);
-        static WindowHandle Handle;
         static EditWindow Instance;
-        internal static void Initialize()
-        {
-            Handle = new WindowHandle(Plugin.Instance, Plugin.Name, new(30, -80), new KeyboardShortcut(KeyCode.S, KeyCode.LeftControl));
-            Util<HumanCustom>.Hook(() =>
-            {
-                Instance = new EditWindow();
-                Hooks.OnBodyChange += Instance.OnBodyChange;
-                Hooks.OnFaceChange += Instance.OnFaceChange;
-                Hooks.OnHairChange += Instance.OnHairChange;
-                Hooks.OnClothesChange += Instance.OnClothesChange;
-                Hooks.OnAccessoryChange += Instance.OnAccessoryChange;
-                Extension.PrepareSaveChara += Instance.Store;
-                Extension.PrepareSaveCoord += Instance.Store;
-                ModApplicator.OnApplicationComplete += Instance.Apply;
-                Util.OnCustomHumanReady(Hooks.OnCustomLoaded);
-            }, () =>
-            {
-                Hooks.OnBodyChange -= Instance.OnBodyChange;
-                Hooks.OnFaceChange -= Instance.OnFaceChange;
-                Hooks.OnHairChange -= Instance.OnHairChange;
-                Hooks.OnClothesChange -= Instance.OnClothesChange;
-                Hooks.OnAccessoryChange -= Instance.OnAccessoryChange;
-                Extension.PrepareSaveChara -= Instance.Store;
-                Extension.PrepareSaveCoord -= Instance.Store;
-                ModApplicator.OnApplicationComplete -= Instance.Apply;
-                Instance = null;
-            });
-        }
+
+        static IDisposable[] Initialize(WindowConfig config) => [
+            SingletonInitializerExtension<HumanCustom>.OnStartup.Subscribe(_ => Instance = new EditWindow(UI.Window(config))),
+            SingletonInitializerExtension<HumanCustom>.OnDestroy.Subscribe(_ => Instance.Subscriptions.Dispose())
+        ];
+
+        internal static IDisposable[] Initialize(Plugin plugin) =>
+            Initialize(new WindowConfig(plugin, Plugin.Name, new(30, -80), new KeyboardShortcut(KeyCode.S, KeyCode.LeftControl)));
     }
     static partial class Hooks
     {
-        internal static event Action<HumanFace> OnFaceChange = delegate { };
-        internal static event Action<HumanBody> OnBodyChange = delegate { };
-        internal static event Action<HumanHair, int> OnHairChange = delegate { };
-        internal static event Action<HumanCloth, int> OnClothesChange = delegate { };
-        internal static event Action<HumanAccessory, int> OnAccessoryChange = delegate { };
         internal static void OnCustomLoaded() =>
-            OnReloadingComplete(HumanCustom.Instance.Human);
-    }
-
-    public partial class Plugin : BasePlugin
-    {
-        public override void Load()
-        {
-            (Instance, Patch) = (this, Harmony.CreateAndPatchAll(typeof(Hooks), $"{Name}.Hooks"));
-            Extension.OnPreprocessChara += (_, archive) => Textures.Load(archive);
-            Extension.OnPreprocessCoord += (_, archive) => Textures.Load(archive);
-
+            ReloadingComplete.OnNext(HumanCustom.Instance.Human);
+        internal static IDisposable[] Initialize(Plugin plugin) => [
             #if SamabakeScrable
-            Extension.OnPreprocessChara += Extension<CharaMods, CoordMods>
-                .Translate<LegacyCharaMods>(Path.Combine(Guid, "modifications.json"), mods => mods);
-            Extension.OnPreprocessCoord += Extension<CharaMods, CoordMods>
-                .Translate<LegacyCoordMods>(Path.Combine(Guid, "modifications.json"), mods => mods);
+            Extension<CharaMods, CoordMods>.Translate<LegacyCharaMods>(Path.Combine(Guid, "modifications.json"), mods => mods),
+            Extension<CharaMods, CoordMods>.Translate<LegacyCoordMods>(Path.Combine(Guid, "modifications.json"), mods => mods),
             #endif
-
-
-            Extension.Register<CharaMods, CoordMods>();
-            Extension.OnLoadChara += human => new ModApplicator(human);
-            Extension.OnLoadCoord += human => new ModApplicator(human);
-
-            Extension.OnSaveChara += (archive) =>
-                Textures.Save(Extension.Chara<CharaMods, CoordMods>(), archive);
-            Extension.OnSaveCoord += (archive) =>
-                Textures.Save(Extension.Coord<CharaMods, CoordMods>(), archive);
-            Extension.OnSaveActor += (actor, archive) =>
-                Textures.Save(Extension.Chara<CharaMods, CoordMods>(actor), archive);
-            EditWindow.Initialize();
-        }
+            Extension.OnPreprocessChara.Select(tuple => tuple.Item2).Subscribe(Textures.Load),
+            Extension.OnPreprocessCoord.Select(tuple => tuple.Item2).Subscribe(Textures.Load),
+            ..Extension.Register<CharaMods, CoordMods>(),
+            Extension.OnSaveCustomChara.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Humans[tuple.Human], tuple.Archive)),
+            Extension.OnSaveCustomCoord.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Humans.NowCoordinate[tuple.Human], tuple.Archive)),
+            Extension.OnSaveActor.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Indices[tuple.Index], tuple.Archive)),
+            Extension.OnLoadChara.Subscribe(human => new ModApplicator(human)),
+            Extension.OnLoadCoord.Subscribe(human => new ModApplicator(human)),
+            ..EditWindow.Initialize(plugin)
+        ];
     }
 }

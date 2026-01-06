@@ -1,13 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
-#if Aicomi
-using R3;
-using R3.Triggers;
-#else
-using UniRx;
-using UniRx.Triggers;
-#endif
+using System.Collections.Generic;
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Reactive.Disposables;
 using Cysharp.Threading.Tasks;
 using Il2CppSystem.Threading;
 using HarmonyLib;
@@ -119,112 +116,80 @@ namespace SardineHead
     }
     class ModApplicator
     {
-        internal static event Action OnApplicationComplete = delegate { };
-        static Dictionary<Human, CompositeDisposable> Current = new();
+        internal static Subject<Unit> OnApplicationComplete = new(); 
+        static Dictionary<Human, CompositeDisposable> Current = new(Il2CppEquals.Instance);
+        static void Prepare(Human human) =>
+            human.component.OnDestroyAsObservable().Subscribe(_ => Cleanup(human));
+        static void Cleanup(Human human) =>
+            Current.Remove(human, out var subscriptions).Maybe(subscriptions.Dispose);
         Human Target;
         CoordMods Mods;
-        static void Prepare(Human human) =>
-            human.gameObject.GetComponent<ObservableDestroyTrigger>()
-                .OnDestroyAsObservable().Subscribe(F.Apply(Dispose, human).Ignoring<Unit>());
-        static void Dispose(Human human) =>
-            (Current.TryGetValue(human, out var item) && Current.Remove(human)).Maybe(F.Apply(Dispose, item));
-        static void Dispose(CompositeDisposable item) =>
-            (!item.IsDisposed).Maybe(item.Dispose);
         internal ModApplicator(Human human)
         {
-            (Target, Mods) = (human, Extension.Coord<CharaMods, CoordMods>(human));
-            Current.TryGetValue(Target, out var item)
-                .Either(F.Apply(Prepare, Target), F.Apply(Dispose, item));
-            Current[Target] = new CompositeDisposable();
-            Hooks.OnFaceReady += OnFaceReady;
-            Hooks.OnBodyReady += OnBodyReady;
-            Hooks.OnClothesReady += OnClothesReady;
-            Hooks.OnReloadingComplete += OnReloadingComplete;
-            Current[Target].Add(Disposable.Create((Action)Clean));
+            (Target, Mods) = (human, Extension<CharaMods, CoordMods>.Humans.NowCoordinate[human]);
+            Current.ContainsKey(Target).Either(F.Apply(Prepare, Target), F.Apply(Cleanup, Target));
+            Current[Target] = [
+                Hooks.OnFaceReady.Where(Il2CppEquals.Apply(Target.face)).Subscribe(Mods.Apply),
+                Hooks.OnBodyReady.Where(Il2CppEquals.Apply(Target.body)).Subscribe(Mods.Apply),
+                Hooks.OnClothesReady
+                    .Where(pair => Il2CppEquals.Apply(Target.cloth, pair.Item))
+                    .Subscribe(pair => pair.Item.Clothess[pair.Index].Apply(pair.Index, Mods)),
+                Hooks.OnReloadingComplete.Where(Il2CppEquals.Apply(Target)).Subscribe(Complete)
+            ];
         }
-        void Clean()
-        {
-            Hooks.OnFaceReady -= OnFaceReady;
-            Hooks.OnBodyReady -= OnBodyReady;
-            Hooks.OnClothesReady -= OnClothesReady;
-            Hooks.OnReloadingComplete -= OnReloadingComplete;
-        }
-
-        void NotifyComplete() =>
-            OnApplicationComplete();
-
-        void Prepare(CancellationTokenSource cts) =>
-            UniTask.DelayFrame(10, Cysharp.Threading.Tasks.PlayerLoopTiming.Update, cts.Token)
-                .ContinueWith(F.Apply(Target.Apply, Mods) + NotifyComplete);
-        void Apply() =>
-            Current[Target].With(Clean)
-                .Add(Disposable.Create((Action)new CancellationTokenSource().With(Prepare).Cancel));
-
-        void OnFaceReady(HumanFace item) =>
-#if Aicomi
-            (item._human == Target).Maybe(F.Apply(item.Apply, Mods));
-#else
-            (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
-#endif
-        void OnBodyReady(HumanBody item) =>
-#if Aicomi
-            (item._human == Target).Maybe(F.Apply(item.Apply, Mods));
-#else
-            (item.human == Target).Maybe(F.Apply(item.Apply, Mods));
-#endif
-        void OnClothesReady(HumanCloth item, int index) =>
-#if Aicomi
-            (item._human == Target).Maybe(F.Apply(item.Clothess[index].Apply, Mods, index));
-#else
-            (item.human == Target).Maybe(F.Apply(item.Clothess[index].Apply, Mods, index));
-#endif
-        void OnReloadingComplete(Human human) =>
-            (human == Target).Maybe(Apply);
+        Action<CancellationTokenSource> Prepare(Action action) => cts =>
+            UniTask.DelayFrame(10, PlayerLoopTiming.Update, cts.Token)
+                .ContinueWith(action + F.Apply(OnApplicationComplete.OnNext, Unit.Default));
+        void Complete(Human human) =>
+            Current[Target.With(Cleanup)] = [
+                Disposable.Create(new CancellationTokenSource()
+                    .With(Prepare(F.Apply(human.Apply, Mods))).Cancel)
+            ];
     }
     static partial class Hooks
     {
-        internal static event Action<HumanFace> OnFaceReady = delegate { };
-        internal static event Action<HumanBody> OnBodyReady = delegate { };
-        internal static event Action<HumanCloth, int> OnClothesReady = delegate { };
-        internal static event Action<Human> OnReloadingComplete = delegate { };
+        internal static IObservable<HumanFace> OnFaceReady => FaceReady.AsObservable(); 
+        internal static IObservable<HumanBody> OnBodyReady => BodyReady.AsObservable(); 
+        internal static IObservable<(HumanCloth Item, int Index)> OnClothesReady => ClothesReady.AsObservable();
+        internal static IObservable<Human> OnReloadingComplete => ReloadingComplete.AsObservable();
+
+        static Subject<HumanFace> FaceReady = new();
+        static Subject<HumanBody> BodyReady = new();
+        static Subject<(HumanCloth, int)> ClothesReady = new();
+        static Subject<Human> ReloadingComplete = new();
 
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanFace), nameof(HumanFace.CreateFaceTexture))]
-        internal static void HumanFaceCreateFaceTexturePostfix(HumanFace __instance) =>
-            OnFaceReady(__instance);
+        internal static void HumanFaceCreateFaceTexturePostfix(HumanFace __instance) => FaceReady.OnNext(__instance);
 
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanBody), nameof(HumanBody.CreateBodyTexture))]
-        internal static void HumanBodyCreataBodyTexturePostfix(HumanBody __instance) =>
-            OnBodyReady(__instance);
+        internal static void HumanBodyCreataBodyTexturePostfix(HumanBody __instance) => BodyReady.OnNext(__instance);
 
         [HarmonyPostfix]
         [HarmonyWrapSafe]
         [HarmonyPatch(typeof(HumanCloth), nameof(HumanCloth.CreateClothesTexture))]
-        internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance, int kind) =>
-            OnClothesReady(__instance, kind);
+        internal static void HumanClothCreateClothesTexturePostfix(HumanCloth __instance, int kind) => ClothesReady.OnNext((__instance, kind));
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human), nameof(Human.Create))]
-        static void HumanCreatePostfix(Human __result) =>
-            OnReloadingComplete(__result);
+        [HarmonyPatch(typeof(Human), nameof(Human.CreateCustom))]
+        static void HumanCreatePostfix(Human __result) => ReloadingComplete.OnNext(__result);
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human), nameof(Human.Reload), [])]
-        static void HumanReloadPostfix(Human __instance) =>
-            OnReloadingComplete(__instance);
+        static void HumanReloadPostfix(Human __instance) => ReloadingComplete.OnNext(__instance);
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human), nameof(Human.ReloadCoordinate), [])]
         [HarmonyPatch(typeof(Human), nameof(Human.ReloadCoordinate), typeof(Human.ReloadFlags))]
-        static void HumanReloadCoordinatePostfix(Human __instance) =>
-            OnReloadingComplete(__instance);
+        static void HumanReloadCoordinatePostfix(Human __instance) => ReloadingComplete.OnNext(__instance);
 
         [HarmonyPostfix, HarmonyWrapSafe]
         [HarmonyPatch(typeof(Human.Reloading), nameof(Human.Reloading.Dispose))]
         internal static void HumanReloadingDisposePostfix(Human.Reloading __instance) =>
-            (!__instance._isReloading).Maybe(F.Apply(OnReloadingComplete, __instance._human));
+            (!__instance._isReloading).Maybe(F.Apply(ReloadingComplete.OnNext, __instance._human));
     }
 }
