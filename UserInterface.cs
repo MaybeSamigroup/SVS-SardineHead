@@ -10,7 +10,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering;
 using TMPro;
-using Cysharp.Threading.Tasks;
 #if Aicomi
 using ILLGAMES.Unity.UI.ColorPicker;
 using ILLGAMES.Extensions;
@@ -48,7 +47,7 @@ namespace SardineHead
                 .With(UGUI.ToggleGroup(allowSwitchOff: false));
 
         internal static Window Window(WindowConfig config) =>
-            config.Create(810, 800, Plugin.Name).With(Configure).With(Templates);
+            config.Create(730, 800, Plugin.Name).With(Configure).With(Templates);
     }
     
     internal abstract class CommonEdit
@@ -70,10 +69,10 @@ namespace SardineHead
     }
     internal class ShaderEdit : CommonEdit
     {
-        static string[] ShaderNames = Json<ShaderDefinitions>
+        static List<(string Name, int Index)> ShaderNames = Json<ShaderDefinitions>
             .Load(Plugin.Instance.Log.LogError,
                 File.OpenRead(Path.Combine(Util.UserDataPath, "plugins", Plugin.Name, "shaders.json")))
-            .BuiltIn.Where(name => Shader.Find(name) != null).ToArray();
+            .BuiltIn.Where(name => Shader.Find(name) != null).Prepend("<unknown>").Index().ToList();
         internal static UIAction PrepareTemplate =
             "Shaders".AsChild(
                 new UIAction(go => Template = go) +
@@ -82,8 +81,8 @@ namespace SardineHead
                 UGUI.Size(width: 500) +
                 "Edit".AsChild(UGUI.Check(24, 24)) +
                 "Name".AsChild(UGUI.Label(106, 24)) +
-                "Shaders".AsChild(UGUI.Dropdown(330, 24, UGUI.Identity) +
-                    UGUI.Component<TMP_Dropdown>(cmp => cmp.AddOptions(ShaderNames.AsIl2Cpp()))));
+                "Shaders".AsChild(UGUI.Dropdown(330, 24,
+                    UGUI.Component<TMP_Dropdown>(cmp => cmp.AddOptions(ShaderNames.Select(item => item.Name).AsIl2Cpp())))));
 
         static GameObject Template { get; set; }
 
@@ -94,15 +93,21 @@ namespace SardineHead
             this(name, parent, wrapper, Template) =>
                 Shaders.OnValueChangedAsObservable().Subscribe(OnValueChanged(view.Populate));
         Action<int> OnValueChanged(Action<MaterialWrapper> action) =>
-            value => (F.Apply(Wrapper.SetShader, ShaderNames[value]) + action.Apply(Wrapper)).Invoke();
+            value => (F.Apply(Wrapper.SetShader, ShaderNames[value].Name) + action.Apply(Wrapper)).Invoke();
         internal override void Store(Modifications mod) =>
             Edit.isOn.Maybe(() => mod.Shader = Wrapper.GetShader());
         internal override void Apply(Modifications mod) =>
             Edit.isOn = (mod.Shader != default).With(F.Apply(Wrapper.SetShader, mod.Shader));
         protected override void UpdateGet() =>
-            Shaders.captionText.SetText(Wrapper.GetShader());
+            Shaders.SetValueWithoutNotify(ShaderNames
+                .Where(tuple => tuple.Name == Wrapper.GetShader())
+                .Select(tuple => tuple.Index)
+                .FirstOrDefault(0));
         protected override void UpdateSet() =>
-            Shaders.captionText.SetText(Wrapper.GetShader());
+            Shaders.SetValueWithoutNotify(ShaderNames
+                .Where(tuple => tuple.Name == Wrapper.GetShader())
+                .Select(tuple => tuple.Index)
+                .FirstOrDefault(0));
     }
     internal class RenderingEdit : CommonEdit
     {
@@ -220,7 +225,9 @@ namespace SardineHead
         Slider Value;
 
         RangeEdit(string name, Transform parent, MaterialWrapper wrapper, GameObject template) : base(name, parent, wrapper, template) =>
-            Root.With(UGUI.Component<TextMeshProUGUI>(cmp => Label = cmp).At("Label") + UGUI.Component<Slider>(cmp => Value = cmp).At("Value"));
+            Root.With(
+                UGUI.Component<TextMeshProUGUI>(cmp => Label = cmp).At("Label") +
+                UGUI.Component<Slider>(cmp => Value = cmp).At("Value"));
 
         RangeEdit(string name, Transform parent, MaterialWrapper wrapper, Vector2 limits) : this(name, parent, wrapper, Template) =>
             (Value.minValue, Value.maxValue) = (limits.x, limits.y);
@@ -345,18 +352,21 @@ namespace SardineHead
                 "Name".AsChild(UGUI.Label(216, 24)) +
                 "Content".AsChild(
                     UGUI.LayoutV() +
-                    "Value".AsChild(UGUI.Label(220, 24)) +
-                    "Import".AsChild(UGUI.Button(100, 24, UGUI.Text(text: "import"))) +
-                    "Export".AsChild(UGUI.Button(100, 24, UGUI.Text(text: "export")))));
+                    "Label".AsChild(UGUI.ScrollLabel(220, 24)) +
+                    "Buttons".AsChild(
+                        UGUI.LayoutH() +
+                        "Import".AsChild(UGUI.Button(100, 24, UGUI.Text(text: "import"))) +
+                        "Export".AsChild(UGUI.Button(100, 24, UGUI.Text(text: "export"))))));
         static GameObject Template { get; set; }
         Button Import;
         Button Export;
         TextMeshProUGUI Value;
         TextureEdit(string name, Transform parent, MaterialWrapper wrapper, GameObject template) : base(name, parent, wrapper, template) =>
             Root.With(
-                UGUI.Component<Button>(cmp => Import = cmp).At("Content", "Import") +
-                UGUI.Component<Button>(cmp => Export = cmp).At("Content", "Export") +
-                UGUI.Component<TextMeshProUGUI>(cmp => Value = cmp).At("Content", "Value"));
+                UGUI.ScrollText(UGUI.Identity).At("Content", "Label") +
+                UGUI.Component<Button>(cmp => Import = cmp).At("Content", "Buttons", "Import") +
+                UGUI.Component<Button>(cmp => Export = cmp).At("Content", "Buttons", "Export") +
+                UGUI.Component<TextMeshProUGUI>(cmp => Value = cmp).At("Content", "Label", "Value"));
 
         internal TextureEdit(string name, Transform parent, MaterialWrapper wrapper) : this(name, parent, wrapper, Template) =>
             (_, _) = (
@@ -466,15 +476,14 @@ namespace SardineHead
             listParent.With(name.AsChild(
                 new UIAction(go => Toggles = go) +
                 UGUI.LayoutV(spacing: 5) +
-                UGUI.Size(width: 300) +
+                UGUI.Size(width: 200) +
                 UGUI.Fitter() +
-                "Section".AsChild(UGUI.Section(300, 24, new(0.3f, 0.3f, 0.3f, 0.8f), UGUI.Text(text: name)))));
-
+                "Section".AsChild(UGUI.Section(200, 24, new(0.3f, 0.3f, 0.3f, 0.8f), UGUI.Text(text: name)))));
         internal void Initialize(Dictionary<string, MaterialWrapper> wrappers, Window window, Transform editParent) =>
             Toggles.active = (EditViews = wrappers.With(Dispose)
                 .Select(entry => new EditView(window, entry.Key, entry.Value,
                     new GameObject(entry.Key)
-                        .With(UGUI.Toggle(300, 24, UGUI.Text(text: entry.Key)) + Toggles.AsParent() +
+                        .With(UGUI.Toggle(200, 24, UGUI.Text(text: entry.Key)) + Toggles.AsParent() +
                             UGUI.Component<Toggle, ToggleGroup>((ui, group) => ui.group = group)), editParent)).ToList()).Count > 0;
         void Store(Dictionary<string, Modifications> mods) =>
             EditViews.ForEach(edits => edits.Store(mods));

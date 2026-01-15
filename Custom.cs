@@ -26,17 +26,15 @@ namespace SardineHead
         CompositeDisposable Subscriptions;
         EditWindow(GameObject go) => go
             .With("Menus".AsChild(
-                UGUI.ColorPanel +
-                UGUI.ScrollV(305, 800,
+                UGUI.Scroll(215, 800, UGUI.ColorPanel +
                 "Contents".AsChild(
-                    UGUI.LayoutV(padding: UGUI.Offset(6, 6)) +
-                    UGUI.Fitter() + new UIAction(go => ListPanel = go.transform)))))
+                    UGUI.LayoutV(padding: UGUI.Offset(5, 5)) +
+                    new UIAction(go => ListPanel = go.transform)))))
              .With("Edits".AsChild(
-                UGUI.ColorPanel +
-                UGUI.ScrollV(505, 800,
+                UGUI.Scroll(515, 800, UGUI.ColorPanel +
                 "Contents".AsChild(
-                    UGUI.LayoutV(padding: UGUI.Offset(6, 6)) +
-                    UGUI.Fitter() + new UIAction(go => EditPanel = go.transform)))));
+                    UGUI.LayoutV(padding: UGUI.Offset(5, 5)) +
+                    new UIAction(go => EditPanel = go.transform)))));
 
         EditWindow(Window window) : this(window.Content) =>
             (Window, FaceGroup, BodyGroup, Subscriptions) = (window, new EditGroup("Face", ListPanel), new EditGroup("Body", ListPanel), [
@@ -108,9 +106,9 @@ namespace SardineHead
             Extension.OnPreprocessChara.Select(tuple => tuple.Item2).Subscribe(Textures.Load),
             Extension.OnPreprocessCoord.Select(tuple => tuple.Item2).Subscribe(Textures.Load),
             ..Extension.Register<CharaMods, CoordMods>(),
-            Extension.OnSaveCustomChara.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Humans[tuple.Human], tuple.Archive)),
-            Extension.OnSaveCustomCoord.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Humans.NowCoordinate[tuple.Human], tuple.Archive)),
             Extension.OnSaveActor.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Indices[tuple.Index], tuple.Archive)),
+            Extension.OnSaveChara.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Humans[tuple.Human], tuple.Archive)),
+            Extension.OnSaveCoord.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Humans.NowCoordinate[tuple.Human], tuple.Archive)),
             Extension.OnLoadChara.Subscribe(human => new ModApplicator(human)),
             Extension.OnLoadCoord.Subscribe(human => new ModApplicator(human)),
             ..EditWindow.Initialize(plugin)
