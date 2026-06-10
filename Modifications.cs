@@ -116,7 +116,7 @@ namespace SardineHead
     }
     class ModApplicator
     {
-        internal static Subject<Unit> OnApplicationComplete = new(); 
+        internal static Subject<Human> OnApplicationComplete = new(); 
         static Dictionary<Human, CompositeDisposable> Current = new(Il2CppEquals.Instance);
         static void Prepare(Human human) =>
             human.component.OnDestroyAsObservable().Subscribe(_ => Cleanup(human));
@@ -139,7 +139,7 @@ namespace SardineHead
         }
         Action<CancellationTokenSource> Prepare(Action action) => cts =>
             UniTask.DelayFrame(10, PlayerLoopTiming.Update, cts.Token)
-                .ContinueWith(action + F.Apply(OnApplicationComplete.OnNext, Unit.Default));
+                .ContinueWith(action + F.Apply(OnApplicationComplete.OnNext, Target));
         void Complete(Human human) =>
             Current[Target.With(Cleanup)] = [
                 Disposable.Create(new CancellationTokenSource()

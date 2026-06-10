@@ -12,7 +12,7 @@
     <ItemGroup>
         <PackageReference Include="System.Reactive" Version="6.1.0"/>
         <Reference Include="System.Windows.Forms">
-            <HintPath>../Resource/System.Windows.Forms.dll</HintPath>
+            <HintPath>../Resource/dotnet/System.Windows.Forms.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <ProjectReference Include="../../SVS-Fishbone/CoastalSmell/$(GamePrefix)/$(GamePrefix)_CoastalSmell.csproj">
@@ -30,8 +30,8 @@
         <Compile Include="../$(PluginName).cs"/>
         <Compile Include="../Modifications.cs"/>
         <Compile Include="../UserInterface.cs"/>
-        <ShaderJson Include="../Resource/shaders.json"/>
-        <NetDll Include="../Resource/*.*" Exclude="shader.json"/>
+        <Assets Include="../Resource/assets/*"/>
+        <NetDll Include="../Resource/dotnet/*"/>
     </ItemGroup>
     <Target Name="Clone" BeforeTargets="Build" Condition="!Exists('../../SVS-Fishbone')">
         <Exec WorkingDirectory="../.." Command="git clone https://github.com/MaybeSamigroup/SVS-Fishbone.git SVS-Fishbone"/>
@@ -42,13 +42,13 @@
     <Target Name="Deploy" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
         <Copy SourceFiles="@(NetDll)" DestinationFolder="$(GamePath)/dotnet"/>
         <Copy SourceFiles="$(OutputPath)/$(AssemblyName).dll" DestinationFolder="$(GamePath)/BepInEx/plugins/" />
-        <Copy SourceFiles="@(ShaderJson)" DestinationFolder="$(GamePath)/UserData/plugins/$(PluginName)"/>
+        <Copy SourceFiles="@(Assets)" DestinationFolder="$(GamePath)/UserData/plugins/$(PluginName)"/>
         <MakeDir Directories="$(GamePath)/UserData/plugins/$(PluginName)/export"/>
         <MakeDir Directories="$(GamePath)/UserData/plugins/$(PluginName)/import"/>
     </Target>
     <Target Name="Release" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
         <Copy SourceFiles="@(NetDll)" DestinationFolder="../Release/$(GameName)/dotnet"/>
-        <Copy SourceFiles="@(ShaderJson)" DestinationFolder="../Release/$(GameName)/UserData/plugins/$(PluginName)"/>
+        <Copy SourceFiles="@(Assets)" DestinationFolder="../Release/$(GameName)/UserData/plugins/$(PluginName)"/>
         <Copy SourceFiles="$(OutputPath)/$(AssemblyName).dll" DestinationFolder="../Release/$(GameName)/BepinEx/plugins"/>
         <MakeDir Directories="../Release/$(GameName)/UserData/plugins/$(PluginName)/export"/>
         <MakeDir Directories="../Release/$(GameName)/UserData/plugins/$(PluginName)/import"/>

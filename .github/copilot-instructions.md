@@ -18,6 +18,7 @@ Unity mod for Japanese adult games (Aicomi, SamabakeScramble, DigitalCraft) prov
 - **Conditional**: `#if Aicomi` for game-specific code
 - **Extensions**: `item.Wrap()` for human parts (face/body/hair/clothes/accessories)
 - **Harmony**: `[HarmonyPostfix, HarmonyWrapSafe]` for game hooks
+- **Il2Cpp Compatibility**: Use `Il2CppEquals.Instance` for equality in dictionaries with Il2Cpp objects
 
 ## Build & Workflow
 - **Build**: `dotnet build --configuration Debug/Release` (auto-clones deps, deploys to game)
@@ -33,6 +34,7 @@ Unity mod for Japanese adult games (Aicomi, SamabakeScramble, DigitalCraft) prov
 - **UI**: Chain `UGUI` calls (e.g., `UGUI.LayoutV() + UGUI.Text("Name")`)
 - **Config**: `Json<T>.Load()` for files like `shaders.json`
 - **Types**: `Float4` for colors/vectors, `Il2CppSystem.Threading` for threading
+- **Rx Subscriptions**: Manage with `CompositeDisposable`
 
 ## Common Tasks
 - **New Property**: Subclass `CommonEdit` in `UserInterface.cs`, add template, implement `Store()`/`Apply()`/`UpdateGet()`/`UpdateSet()`

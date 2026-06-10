@@ -96,8 +96,6 @@ namespace SardineHead
     }
     static partial class Hooks
     {
-        internal static void OnCustomLoaded() =>
-            ReloadingComplete.OnNext(HumanCustom.Instance.Human);
         internal static IDisposable[] Initialize(Plugin plugin) => [
             #if SamabakeScrable
             Extension<CharaMods, CoordMods>.Translate<LegacyCharaMods>(Path.Combine(Guid, "modifications.json"), mods => mods),

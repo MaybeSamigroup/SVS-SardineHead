@@ -178,6 +178,12 @@ namespace SardineHead
             } ? Wrap(item.Clothess[index]) : new();
         internal static MaterialWrappers Wrap(this HumanAccessory item, int index) =>
             index < item.Accessories.Count ? Wrap(item.Accessories[index]) : new();
+
+#if DigitalCraft
+        internal static MaterialWrappers Wrap(this DigitalCraft.ItemComponent cmp) =>
+            WrapRenderers(RenderersOfGo(cmp.gameObject));
+#endif
+
         static void Apply(MaterialWrappers wrappers, Mods mods) =>
             wrappers.Do(entry => entry.Value.Apply(mods.TryGetValue(entry.Key, out var value) ? value : new()));
         static void Apply(MaterialWrappers renderers, MaterialWrappers ctc, Mods mods) =>
