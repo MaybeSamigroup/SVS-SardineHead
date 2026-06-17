@@ -180,8 +180,11 @@ namespace SardineHead
             index < item.Accessories.Count ? Wrap(item.Accessories[index]) : new();
 
 #if DigitalCraft
-        internal static MaterialWrappers Wrap(this DigitalCraft.ItemComponent cmp) =>
-            WrapRenderers(RenderersOfGo(cmp.gameObject));
+        internal static MaterialWrappers Wrap(this DigitalCraft.OCIItem item) =>
+            WrapRenderers(RenderersOfGo(item.objectItem));
+
+        internal static void Apply(this DigitalCraft.OCIItem item, Mods mods) =>
+            Apply(item.Wrap(), mods);
 #endif
 
         static void Apply(MaterialWrappers wrappers, Mods mods) =>
@@ -283,7 +286,7 @@ namespace SardineHead
     {
         public const string Name = "SardineHead";
         public const string Guid = $"{Process}.{Name}";
-        public const string Version = "2.2.0";
+        public const string Version = "2.3.0";
         internal static Plugin Instance;
         CompositeDisposable Subscriptions;
         IDisposable Initialize() =>

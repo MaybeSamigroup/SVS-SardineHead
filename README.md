@@ -19,14 +19,14 @@ Binary releases contain required [Windows Forms](https://github.com/dotnet/winfo
 
 ### Aicomi
 
-Confirmed working under Aicomi 1.0.7.
+Confirmed working under Aicomi (with Night Tour) 2.0.3.
 
 - [AC-HF_Patch](https://github.com/ManlyMarco/AC-HF_Patch)
   - Message Center
   - BepInEx.ConfigurationManager
   - SVS_BepisPlugins
 - [Fishbone/CoastalSmell](https://github.com/MaybeSamigroup/SVS-Fishbone)
-  - 4.0.0/2.0.0 or later
+  - 4.1.0/2.1.0 or later
 
 ### SamabakeScramble
 
@@ -37,16 +37,16 @@ Confirmed working under SamabakeScramble 1.1.6
   - BepInEx.ConfigurationManager
   - SVS_BepisPlugins
 - [Fishbone/CoastalSmell](https://github.com/MaybeSamigroup/SVS-Fishbone)
-  - 4.0.0/2.0.0 or later
+  - 4.1.0/2.1.0 or later
 
 ### DigitalCraft Standalone
 
-Confirmed working under DigitalCraft 3.0.0.
+Confirmed working under DigitalCraft 3.1.1.
 
 - [BepInEx](https://github.com/BepInEx/BepInE)
   - [Bleeding Edge (BE) build](https://builds.bepinex.dev/projects/bepinex_be) #752 or later
 - [Fishbone/CoastalSmell](https://github.com/MaybeSamigroup/SVS-Fishbone)
-  - 4.0.0/2.0.0 or later
+  - 4.1.0/2.1.0 or later
 
 ## Installation
 
@@ -78,7 +78,7 @@ Please move its contents to new one and delete it.
 
 Start character creation and use keyboard shortcut to show / hide the UI.
 
-Ctrl+S is mapped as default and can be configured through plugin settings.
+Ctrl+S (AC/SVS) or Alt+S (DC) is mapped as default and can be configured through plugin settings.
 
 To save your modifications, you have to check the desired property.
 
