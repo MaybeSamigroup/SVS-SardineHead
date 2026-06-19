@@ -1,4 +1,5 @@
 using System;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Disposables;
 using System.Linq;
@@ -9,14 +10,29 @@ using BepInEx.Unity.IL2CPP;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Character;
+using DigitalCraft;
 using CoastalSmell;
 using Fishbone;
-using ItemExtension = Fishbone.Extension<CoastalSmell.Item, DigitalCraft.OIItemInfo, DigitalCraft.OCIItem, SardineHead.ItemMods>;
 
 namespace SardineHead
 {
-   internal class EditWindow
+    internal class EditWindow
     {
+        static IObservable<Human> OnTargetChangedToHuman =>
+            DigitalCraftExtension.OnSelectSingle
+                .Where(TargetType.Chara)
+                .Select(oci => new OCIChar(oci.Pointer).charInfo);
+        static IObservable<OCIItem> OnTargetChangedToItem =>
+            DigitalCraftExtension.OnSelectSingle
+                .Where(TargetType.Item)
+                .Select(oci => new OCIItem(oci.Pointer));
+        static IObservable<Unit> OnTargetChangedToOther =>
+            DigitalCraftExtension.OnSelectSingle
+                .Where(~TargetType.Chara & ~TargetType.Item)
+                .Select(_ => Unit.Default)
+                .Merge(DigitalCraftExtension.OnSelectMultiple.Select(_ => Unit.Default))
+                .Merge(DigitalCraftExtension.OnSelectNothing);
+
         Window Window;
         Transform ListPanel;
         Transform EditPanel;
@@ -34,21 +50,21 @@ namespace SardineHead
                 "Contents".AsChild(
                     UGUI.LayoutV(padding: UGUI.Offset(5, 5)) +
                     new UIAction(go => ListPanel = go.transform)))))
-             .With("Edits".AsChild(
+            .With("Edits".AsChild(
                 UGUI.Scroll(515, 800, UGUI.ColorPanel +
                 "Contents".AsChild(
                     UGUI.LayoutV(padding: UGUI.Offset(5, 5)) +
-                    new UIAction(go => EditPanel = go.transform)))));
+                    new UIAction(go => EditPanel = go.transform)))))
+            .SetActive(false);
         EditWindow(Window window) : this(window.Content) =>
             (Window, ItemGroup, FaceGroup, BodyGroup, Subscriptions) = (
                 window,
                 new EditGroup("Item", ListPanel),
                 new EditGroup("Face", ListPanel),
                 new EditGroup("Body", ListPanel), [
-                DigitalCraftExtension.OnSelectNothing.Subscribe(_ => OnTargetCleared()),
-                DigitalCraftExtension.OnSelectMultiple.Subscribe(_ => OnTargetCleared()),
-                DigitalCraftExtension.OnSelectSingleChara.Subscribe(oci => OnTargetChange(oci.charInfo)),
-                DigitalCraftExtension.OnSelectSingleItem.Subscribe(OnTargetChange),
+                OnTargetChangedToOther.Subscribe(OnTargetChange),
+                OnTargetChangedToHuman.Subscribe(OnTargetChange),
+                OnTargetChangedToItem.Subscribe(OnTargetChange),
                 window.OnUpdate.Subscribe(_ => Update())
             ]);
         EditGroup GroupAt(string name, Dictionary<int, EditGroup> groups, int index) =>
@@ -56,21 +72,28 @@ namespace SardineHead
         IEnumerable<EditGroup> AllGroups =>
             [ItemGroup, BodyGroup, FaceGroup, .. HairGroups.Values, .. ClothesGroups.Values, .. AccessoryGroups.Values];
         void Update() => AllGroups.ForEach(group => group.Update());
-        void Cleanup() => AllGroups.ForEach(group => Initialize(new (), group));
+        void Cleanup() => AllGroups.ForEach(group => Initialize(new(), group));
         void Initialize(Dictionary<string, MaterialWrapper> wrappers, EditGroup group) =>
             group.Initialize(wrappers, Window, EditPanel);
-        void OnTargetCleared()
+        void OnTargetChange(Unit _)
         {
             Target.Dispose();
             Window.Title = "SardineHead";
             Window.Content.SetActive(false);
         }
-        void OnTargetChange(DigitalCraft.OCIItem target)
+        void OnTargetChange(OCIItem target)
         {
             Target.Dispose();
             Initialize(target.Wrap(), ItemGroup);
             Apply(target);
-            Target = [Disposable.Create(F.Apply(Store, target)), Disposable.Create(Cleanup)];
+            Target = [
+                Extension.OnPrepareSaveObject
+                    .Where(TargetType.Item)
+                    .Where(oci => oci.Pointer == target.Pointer)
+                    .Subscribe(_ => Store(target)),
+                Disposable.Create(F.Apply(Store, target)),
+                Disposable.Create(Cleanup)
+            ];
             Window.Content.SetActive(true);
         }
         void OnTargetChange(Human target)
@@ -82,7 +105,13 @@ namespace SardineHead
             Enumerable.Range(0, target.cloth.clothess.Length).ForEach(index => OnClothesChange(target.cloth, index));
             Enumerable.Range(0, target.acs.accessories.Length).ForEach(index => OnAccessoryChange(target.acs, index));
             Apply(target);
-            Target = [Disposable.Create(F.Apply(Store, target)), Disposable.Create(Cleanup)];
+            Target = [
+                Extension.OnPrepareSaveChara
+                    .Where(human => human.Pointer == target.Pointer)
+                    .Subscribe(_ => Store(target)),
+                Disposable.Create(F.Apply(Store, target)),
+                Disposable.Create(Cleanup)
+            ];
             Window.Content.SetActive(true);
         }
         void OnBodyChange(HumanBody item) =>
@@ -118,22 +147,22 @@ namespace SardineHead
         {
             ItemGroup.Apply(mods.Values);
         }
-        void Apply(DigitalCraft.OCIItem target) => Apply(ItemExtension.Values[target]);
-        void Store(DigitalCraft.OCIItem target) => ItemExtension.Values[target] = new ItemMods()
+        void Apply(OCIItem target) => Apply(ObjectExtension<ItemMods>.Values[target]);
+        void Store(OCIItem target) => ObjectExtension<ItemMods>.Values[target] = new ItemMods()
         {
             Values = ItemGroup.Store(),
         };
 
         static EditWindow Instance;
         static IDisposable[] Initialize(WindowConfig config) => [
-            DigitalCraftExtension.OnSceneStartup.Subscribe(_ => (Instance = new EditWindow(UI.Window(config))).OnTargetCleared()),
+            DigitalCraftExtension.OnSceneStartup.Subscribe(_ => Instance = new EditWindow(UI.Window(config))),
             DigitalCraftExtension.OnSceneDestroy.Subscribe(_ => Instance.Subscriptions.Dispose())
         ];
         internal static IDisposable[] Initialize(Plugin plugin) =>
             Initialize(new WindowConfig(plugin, Plugin.Name, new(30, -80), new KeyboardShortcut(KeyCode.H, KeyCode.LeftAlt)));
     }
 
-    [ItemExtension<ItemMods>(Plugin.Name, "modifications")]
+    [ObjectExtension<ItemMods>(TargetType.Item, Plugin.Name, "modifications")]
     public class ItemMods
     {
         public Dictionary<string, Modifications> Values { get; set; } = new();
@@ -142,14 +171,14 @@ namespace SardineHead
     {
         internal static IDisposable[] Initialize(Plugin plugin) => [
             ..Extension.Register<CharaMods, CoordMods>(),
-            ..Extension.RegisterItem<ItemMods>(),
+            ..Extension.RegisterObject<ItemMods>(),
             Extension.OnLoadScene.Subscribe(Textures.Load),
             Extension.OnPreprocessChara.Select(tuple => tuple.Item2).Subscribe(Textures.Load),
             Extension.OnPreprocessCoord.Select(tuple => tuple.Item2).Subscribe(Textures.Load),
             Extension.OnSaveChara.Subscribe(tuple => Textures.Save(Extension<CharaMods, CoordMods>.Humans[tuple.Human], tuple.Archive)),
             Extension.OnLoadChara.Subscribe(human => new ModApplicator(human)),
             Extension.OnLoadCoord.Subscribe(human => new ModApplicator(human)),
-            ItemExtension.OnLoad.Subscribe(entry => entry.Index.Apply(entry.Value.Values)),
+            ObjectExtension<ItemMods>.OnLoad.Subscribe(entry => new OCIItem(entry.Info.Pointer).Apply(entry.Value.Values)),
             ..EditWindow.Initialize(plugin)
         ];
     }
